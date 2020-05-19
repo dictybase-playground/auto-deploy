@@ -1,0 +1,24 @@
+name: Build docker image
+on: 
+  push: 
+jobs:
+  build:
+    runs-on: ubuntu-18.04
+    steps:
+      - name: set up golang
+        uses: actions/setup-go@v2-beta
+        with:
+            go-version: 1.13.10
+      - name: check out code
+        uses: actions/checkout@v2
+      - name: build docker image
+        run: docker build \
+             --build-arg VCS_REF=`git rev-parse --short HEAD` \
+             --build-arg BUILD_DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` \
+             --build-arg VERSION=develop-`git rev-parse --short HEAD` \
+             -t dictybase/event-messenger:develop-$(git rev-parse --short HEAD) \
+             -f build/package/Dockerfile .
+      - name: login to docker hub
+        run: docker login -u ${{ secrets.DOCKER_USER }} -p ${{ secrets.DOCKER_PASSWORD }}
+      - name: push to docker hub
+        run: docker push dictybase/event-messenger:develop-$(git rev-parse --short HEAD)
