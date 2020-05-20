@@ -13,5 +13,5 @@ jobs:
           project_id: ${{ secrets.PROJECT_ID }}
           service_account_key: ${{ secrets.SA_KEY }}
           export_default_credentials: true
-        run: |
-          gcloud container clusters list
+      - name: list clusters
+        run: gcloud container clusters list
