@@ -13,5 +13,11 @@ jobs:
           project_id: ${{ secrets.PROJECT_ID }}
           service_account_key: ${{ secrets.SA_KEY }}
           export_default_credentials: true
-      - name: list clusters
-        run: gcloud container clusters list
+      - name: get credentials
+        run: gcloud container clusters get-credentials siddkube --zone us-central1-a
+      - name: set up helm 
+        uses: azure/setup-helm@v1
+        with:
+          version: 'v2.16.1'
+      - name: check helm connectivity
+        run: helm version
