@@ -1,0 +1,17 @@
+name: Deploy to kubernetes
+on:
+  deployment:
+jobs:
+  deploy:
+    runs-on: ubuntu-18.04
+    steps:
+      - name: check out code
+        uses: actions/checkout@v2
+      - name: setup google cloud sdk
+        uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
+        with:
+          project_id: ${{ secrets.PROJECT_ID }}
+          service_account_key: ${{ secrets.SA_KEY }}
+          export_default_credentials: true
+        run: |
+          gcloud container clusters list
