@@ -21,5 +21,14 @@ jobs:
         run: gcloud container clusters get-credentials siddkube --zone us-central1-a
       - name: check helm connectivity
         run: helm version
-      - name: deploy to k8s
-        run: helm install --name automan --namespace dictybase --set image.tag=sha-`git rev-parse --short HEAD` deployments/charts/automan 
+      - name: set presence of chart
+        run: |
+          chart_present=`helm ls automan| grep DEPLOYED| cut -f4`
+          export ${chart_present}
+      - name: install chart
+        if: env.chart_present == 'true'
+        #run: helm install --name automan --namespace dictybase --set image.tag=sha-`git rev-parse --short HEAD` deployments/charts/automan 
+        run: echo helm install
+      - name: upgrade chart
+        if: env.chart_present == 'false'
+        run: echo helm upgrade
