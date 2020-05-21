@@ -33,4 +33,4 @@ jobs:
         run: helm install --name automan --namespace dictybase --set image.tag=sha-`git rev-parse --short HEAD` deployments/charts/automan 
       - name: upgrade chart
         if: steps.chart_value.outputs.chart_upgrade != 0
-        run: helm upgrade --name automan --set image.tag=sha-`git rev-parse --short HEAD` deployments/charts/automan
+        run: helm upgrade automan --set image.tag=sha-`git rev-parse --short HEAD` deployments/charts/automan
