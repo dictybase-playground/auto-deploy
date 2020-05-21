@@ -21,3 +21,5 @@ jobs:
           version: 'v2.16.1'
       - name: check helm connectivity
         run: helm version
+      - name: deploy to k8s
+        run: helm install --name automan --namespace dictybase --set image.tag=sha-`git rev-parse --short HEAD` deployments/charts/automan 
