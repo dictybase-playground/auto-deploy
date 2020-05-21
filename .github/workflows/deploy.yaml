@@ -10,6 +10,7 @@ jobs:
       - name: setup google cloud sdk
         uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
         with:
+          version: '293.0.0'
           project_id: ${{ secrets.PROJECT_ID }}
           service_account_key: ${{ secrets.SA_KEY }}
           export_default_credentials: true
@@ -22,13 +23,14 @@ jobs:
       - name: check helm connectivity
         run: helm version
       - name: set presence of chart
+        id: chart_value
         run: |
-          chart_present=`helm ls automan| grep DEPLOYED| cut -f4`
-          export ${chart_present}
+          value=''
+          if helm ls automan| grep DEPLOYED| cut -f4; then value=yes; fi
+          echo "::set-output name=chart_upgrade::${value}"
       - name: install chart
-        if: env.chart_present == 'true'
-        #run: helm install --name automan --namespace dictybase --set image.tag=sha-`git rev-parse --short HEAD` deployments/charts/automan 
-        run: echo helm install
+        if: steps.chart_value.outputs.chart_upgrade == 0
+        run: helm install --name automan --namespace dictybase --set image.tag=sha-`git rev-parse --short HEAD` deployments/charts/automan 
       - name: upgrade chart
-        if: env.chart_present == 'false'
-        run: echo helm upgrade
+        if: steps.chart_value.outputs.chart_upgrade != 0
+        run: helm upgrade --name automan --set image.tag=sha-`git rev-parse --short HEAD` deployments/charts/automan
