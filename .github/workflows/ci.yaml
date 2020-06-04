@@ -1,6 +1,8 @@
 name: Docker image build and push
 on: 
   push:
+    branches:
+      - develop
 jobs:
   build:
     runs-on: ubuntu-18.04
@@ -16,3 +18,38 @@ jobs:
           add_git_labels: true
           tag_with_sha: true
           dockerfile: build/package/Dockerfile
+
+  deploy-event:
+    needs: build
+    runs-on: ubuntu-18.04
+    steps:
+      - name: check out code
+        uses: actions/checkout@v2
+      - name: extract git sha
+        id: git_sha
+        run: |
+          value=`git rev-parse --short HEAD`
+          echo "::set-output name=git_sha_value::${value}"
+      - name: set cluster name
+        id: cluster
+        uses: actions/github-script@v1
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          script: |
+            login = context.payload.sender.login
+            core.setOutput("cluster_name","siddkube")
+            if (login === "wildlifehexagon") {
+              core.setOutput("cluster_name","erickube")
+            }
+      - name: prepare for deploy
+        id: prepare_deploy
+        uses: dictybase-docker/prepare-deploy@v1
+        with:
+          cluster-name: ${{steps.cluster.outputs.cluster_name}}
+          namespace: dictybase
+          chart-name: automan
+          chart-path: deployments/charts/automan
+          token: ${{secrets.GITHUB_TOKEN}}
+          image-tag: sha-${{steps.git_sha.outputs.git_sha_value}}
+          ref: ${{github.event.ref}} 
+
