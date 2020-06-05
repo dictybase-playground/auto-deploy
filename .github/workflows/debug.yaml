@@ -1,0 +1,16 @@
+name: Debug
+on: 
+  push:
+    branches:
+      - develop
+jobs:
+  debug:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: what is in context
+        id: cluster
+        uses: actions/github-script@v1
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          script: |
+            core.debug(JSON.stringify(context))
