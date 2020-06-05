@@ -1,6 +1,5 @@
 name: Deploy to kubernetes
-on:
-  deployment:
+on: ['deployment']
 jobs:
   before-deploy:
     runs-on: ubuntu-20.04
