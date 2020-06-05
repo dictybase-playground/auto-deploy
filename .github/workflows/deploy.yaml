@@ -2,8 +2,28 @@ name: Deploy to kubernetes
 on:
   deployment:
 jobs:
+  before-deploy:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: set queue deploy status
+        uses: actions/github-script@v1
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          script: |
+            github.repos.createDeploymentStatus({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                deployment_id: context.payload.id,
+                state: "in_progress",
+                log_url: context.payload.url,
+                description: "deployment is in progress"
+                mediaType: {
+                    format: "application/vnd.github.flash-preview+json"
+                }
+            })
   deploy:
-    runs-on: ubuntu-18.04
+    needs: before-deploy
+    runs-on: ubuntu-20.04
     steps:
       - name: check out code
         uses: actions/checkout@v2
@@ -17,20 +37,38 @@ jobs:
       - name: set up helm 
         uses: azure/setup-helm@v1
         with:
-          version: 'v2.16.1'
+          version: 'v2.16.7'
       - name: get credentials
-        run: gcloud container clusters get-credentials siddkube --zone us-central1-a
+        run: gcloud container clusters get-credentials ${{github.event.deployment.payload.cluster}} --zone  ${{github.event.deployment.payload.zone}}
       - name: check helm connectivity
         run: helm version
       - name: set presence of chart
         id: chart_value
         run: |
           value=''
-          if helm ls automan| grep DEPLOYED| cut -f4; then value=yes; fi
+          if helm ls ${{github.event.deployment.payload.chart}}| grep DEPLOYED| cut -f4; then value=yes; fi
           echo "::set-output name=chart_upgrade::${value}"
       - name: install chart
         if: steps.chart_value.outputs.chart_upgrade == 0
-        run: helm install --name automan --namespace dictybase --set image.tag=sha-`git rev-parse --short HEAD` deployments/charts/automan 
+        run: helm install --name ${{github.event.deployment.payload.chart}} --namespace ${{github.event.deployment.payload.namespace}} --set image.tag=${{github.event.deployment.payload.image_tag}} ${{github.event.deployment.payload.path}}
       - name: upgrade chart
         if: steps.chart_value.outputs.chart_upgrade != 0
-        run: helm upgrade automan --set image.tag=sha-`git rev-parse --short HEAD` deployments/charts/automan
+        run: helm upgrade ${{github.event.deployment.payload.chart}} --namespace ${{github.event.deployment.payload.namespace}} --set image.tag=${{github.event.deployment.payload.image_tag}} ${{github.event.deployment.payload.path}}
+
+  after-deploy:
+    needs: deploy
+    runs-on: ubuntu-20.04
+    steps:
+      - name: set final deploy status
+        uses: actions/github-script@v1
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          script: |
+            github.repos.createDeploymentStatus({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                deployment_id: context.payload.id,
+                state: "success",
+                log_url: context.payload.url,
+                description: "deployment is in progress"
+            })
