@@ -45,7 +45,7 @@ jobs:
         id: prepare_deploy
         uses: dictybase-docker/prepare-deploy@v1
         with:
-          cluster-name: ${{steps.cluster.outputs.cluster_name}}
+          cluster-name: ${{ steps.cluster.outputs.cluster_name }}
           cluster-zone: "us-central1-a"
           namespace: dictybase
           chart-name: automan
@@ -75,8 +75,8 @@ jobs:
             const fsPromises = require("fs").promises
             const workspace = process.env.GITHUB_WORKSPACE
             const payload = path.join(workspace,"deployment.json")
-            console.log(payload)
             const raw = await fsPromises.readFile(payload,"utf-8")
+            console.log(raw)
             const json = JSON.parse(raw)
             core.setOutput("deployment_id",json.id)
             core.setOutput("deployment_url",json.url)
