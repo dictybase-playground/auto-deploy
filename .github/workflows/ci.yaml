@@ -1,4 +1,4 @@
-name: Docker image build and push
+name: Continuos integration and deployment
 on: 
   push:
     branches:
@@ -19,7 +19,7 @@ jobs:
           tag_with_sha: true
           dockerfile: build/package/Dockerfile
 
-  deploy-event:
+  prepare-deploy:
     needs: build
     runs-on: ubuntu-20.04
     steps:
@@ -53,4 +53,160 @@ jobs:
           token: ${{secrets.GITHUB_TOKEN}}
           image-tag: sha-${{steps.git_sha.outputs.git_sha_value}}
           ref: ${{github.event.ref}} 
+          artifact: "automan"
 
+
+  deploy:
+    needs: prepare-deploy
+    runs-on: ubuntu-20.04
+    steps:
+      - name: extract information from deployment payload
+        uses: actions/github-script@v1
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          script: |
+            const fsPromises = require("fs").promises
+            const artifact = require("@actions/artifact")
+            const resp = await artifact.create().downloadArtifact("automan")
+            const raw = await fsPromises.readFile(resp.downloadPath,"utf-8")
+            const json = JSON.parse(raw)
+            core.setOutput("deployment_id",json.id)
+            core.setOutput("deployment_url",json.url)
+            core.setOutput("cluster",json.payload.cluster)
+            core.setOutput("zone",json.payload.zone)
+            core.setOutput("chart",json.payload.chart)
+            core.setOutput("namespace",json.payload.namespace)
+            core.setOutput("image_tag",json.payload.image_tag)
+            core.setOutput("path",json.payload.path)
+        uses: actions/github-script@v1
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          script: |
+            github.repos.createDeploymentStatus({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                deployment_id: core.getInput("deployment_id"),
+                log_url: core.getInput("deployment_url"),
+                state: "in_progress",
+                description: "deployment is in progress"
+                mediaType: {
+                    format: "application/vnd.github.flash-preview+json"
+                }
+            })
+      - name: check out code
+        uses: actions/checkout@v2
+      - name: setup google cloud sdk
+        uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
+        with:
+          version: '293.0.0'
+          project_id: ${{ secrets.PROJECT_ID }}
+          service_account_key: ${{ secrets.SA_KEY }}
+          export_default_credentials: true
+      - name: set up helm 
+        uses: azure/setup-helm@v1
+        with:
+          version: 'v2.16.7'
+      - name: get credentials
+        if: ${{ success() }}
+        uses: actions/github-script@v1
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          script: |
+            const exec = require("@actions/exec")
+            const io = require("@actions/io")
+            const gcloud = await io.which("gcloud", true)
+            const args = [
+                "container",
+                "clusters",
+                "get-credentials",
+                core.getInput("cluster"),
+                "--zone",
+                core.getInput("zone")
+            ]
+            await exec.exec(`"${gcloud}"`, args)
+      - name: set presence of chart
+        if: ${{ success() }}
+        uses: actions/github-script@v1
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          script: |
+            const exec = require("@actions/exec")
+            const io = require("@actions/io")
+            const helm = await io.which("helm", true)
+            await exec.exec(helm, ["version"])
+            const options = {}
+            let output
+            options.listeners = {
+                stdout: (data) => {
+                    output += data.toString()
+                }
+            }
+            await exec.exec(helm, ["ls", core.getInput("chart"), "--output", "json"], options)
+            core.setOutput("chart_upgrade","no")
+            if (output) {
+                json = JSON.parse(output)
+                if json.Releases[0].Name === core.getInput("chart") {
+                    core.setOutput("chart_upgrade","yes")
+                }
+            }
+      - name: install or upgrade chart
+        if: ${{ success() }}
+        uses: actions/github-script@v1
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          script: |
+            const exec = require("@actions/exec")
+            const io = require("@actions/io")
+            const helm = await io.which("helm", true)
+            if (core.getInput("chart_upgrade") === "yes") {
+                await exec.exec(helm, [
+                    "upgrade",
+                    core.getInput("chart"),
+                    "--namespace",
+                    core.getInput("namespace"),
+                    "--set",
+                    `image.tag=${core.getInput("image_tag")}`,
+                    core.getInput("path")
+                ])
+                core.debug(`upgrade chart ${core.getInput("chart")} with image tag ${core.getInput("image_tag")}`)
+            } else {
+                await exec.exec(helm,[
+                    "install",
+                    "--name",
+                    core.getInput("chart"),
+                    "--namespace",
+                    core.getInput("namespace"),
+                    "--set",
+                    `image.tag=${core.getInput("image_tag")}`,
+                    core.getInput("path")
+                ])
+                core.debug(`install chart ${core.getInput("chart")} with image tag ${core.getInput("image_tag")}`)
+            }
+      - name: set successful deploy status
+        if: ${{ success() }}
+        uses: actions/github-script@v1
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          script: |
+            $github.repos.createDeploymentStatus({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                deployment_id: core.getInput("deployment_id")
+                state: "success",
+                log_url: core.getInput("deployment_url"),
+                description: "deployment is successful"
+            })
+      - name: set unsuccessful deploy status
+        if: ${{ failure() }}
+        uses: actions/github-script@v1
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          script: |
+            github.repos.createDeploymentStatus({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                deployment_id: core.getInput("deployment_id")
+                state: "error",
+                log_url: core.getInput("deployment_url"),
+                description: "deployment failed with error"
+            })
