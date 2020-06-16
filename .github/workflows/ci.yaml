@@ -67,6 +67,8 @@ jobs:
         with:
           name: "automan"
           path: ${{ github.workspace }}/deployment.json
+      - name: print payload
+        run: cat ${{ github.workspace }}/deployment.json
       - name: extract information from deployment payload
         uses: actions/github-script@v2
         with:
