@@ -66,14 +66,15 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           name: "automan"
-          path: "deployment.json"
+          path: "${{github.context.workspace}}/deployment.json"
       - name: extract information from deployment payload
         uses: actions/github-script@v2
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
           script: |
+            const path = require("path")
             const fsPromises = require("fs").promises
-            const raw = await fsPromises.readFile("deployment.json","utf-8")
+            const raw = await fsPromises.readFile(path.join(context.workspace,"deployment.json"),"utf-8")
             const json = JSON.parse(raw)
             core.setOutput("deployment_id",json.id)
             core.setOutput("deployment_url",json.url)
