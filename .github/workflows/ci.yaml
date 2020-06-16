@@ -60,17 +60,20 @@ jobs:
     needs: prepare-deploy
     runs-on: ubuntu-20.04
     steps:
-      - name: install artifact package
-        run: npm install @actions/artifact
+      - name: check out code
+        uses: actions/checkout@v2
+      - name: download deployment artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: "automan"
+          path: "deployment.json"
       - name: extract information from deployment payload
         uses: actions/github-script@v2
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
           script: |
             const fsPromises = require("fs").promises
-            const artifact = require("@actions/artifact")
-            const resp = await artifact.create().downloadArtifact("automan")
-            const raw = await fsPromises.readFile(resp.downloadPath,"utf-8")
+            const raw = await fsPromises.readFile("deployment.json","utf-8")
             const json = JSON.parse(raw)
             core.setOutput("deployment_id",json.id)
             core.setOutput("deployment_url",json.url)
@@ -96,8 +99,6 @@ jobs:
                     format: "application/vnd.github.flash-preview+json"
                 }
             })
-      - name: check out code
-        uses: actions/checkout@v2
       - name: setup google cloud sdk
         uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
         with:
@@ -125,7 +126,7 @@ jobs:
                 "--zone",
                 core.getInput("zone")
             ]
-            await exec.exec(`"${gcloud}"`, args)
+            await exec.exec(gcloud, args)
       - name: set presence of chart
         if: ${{ success() }}
         uses: actions/github-script@v2
