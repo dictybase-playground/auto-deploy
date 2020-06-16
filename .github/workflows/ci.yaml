@@ -66,7 +66,7 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           name: "automan"
-          path: "${{github.context.workspace}}/deployment.json"
+          path: ${{github.context.workspace}}/deployment.json
       - name: extract information from deployment payload
         uses: actions/github-script@v2
         with:
@@ -193,7 +193,7 @@ jobs:
             $github.repos.createDeploymentStatus({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                deployment_id: core.getInput("deployment_id")
+                deployment_id: core.getInput("deployment_id"),
                 state: "success",
                 log_url: core.getInput("deployment_url"),
                 description: "deployment is successful"
@@ -207,7 +207,7 @@ jobs:
             github.repos.createDeploymentStatus({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                deployment_id: core.getInput("deployment_id")
+                deployment_id: core.getInput("deployment_id"),
                 state: "error",
                 log_url: core.getInput("deployment_url"),
                 description: "deployment failed with error"
