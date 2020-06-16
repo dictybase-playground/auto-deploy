@@ -32,7 +32,7 @@ jobs:
           echo "::set-output name=git_sha_value::${value}"
       - name: set cluster name
         id: cluster
-        uses: actions/github-script@v1
+        uses: actions/github-script@v2
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
           script: |
@@ -60,8 +60,10 @@ jobs:
     needs: prepare-deploy
     runs-on: ubuntu-20.04
     steps:
+      - name: install artifact package
+        run: npm install @actions/artifact
       - name: extract information from deployment payload
-        uses: actions/github-script@v1
+        uses: actions/github-script@v2
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
           script: |
@@ -79,7 +81,7 @@ jobs:
             core.setOutput("image_tag",json.payload.image_tag)
             core.setOutput("path",json.payload.path)
       - name: create deployment status
-        uses: actions/github-script@v1
+        uses: actions/github-script@v2
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
           script: |
@@ -109,12 +111,11 @@ jobs:
           version: 'v2.16.7'
       - name: get credentials
         if: ${{ success() }}
-        uses: actions/github-script@v1
+        uses: actions/github-script@v2
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
           script: |
             const exec = require("@actions/exec")
-            const io = require("@actions/io")
             const gcloud = await io.which("gcloud", true)
             const args = [
                 "container",
@@ -127,12 +128,11 @@ jobs:
             await exec.exec(`"${gcloud}"`, args)
       - name: set presence of chart
         if: ${{ success() }}
-        uses: actions/github-script@v1
+        uses: actions/github-script@v2
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
           script: |
             const exec = require("@actions/exec")
-            const io = require("@actions/io")
             const helm = await io.which("helm", true)
             await exec.exec(helm, ["version"])
             const options = {}
@@ -152,12 +152,11 @@ jobs:
             }
       - name: install or upgrade chart
         if: ${{ success() }}
-        uses: actions/github-script@v1
+        uses: actions/github-script@v2
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
           script: |
             const exec = require("@actions/exec")
-            const io = require("@actions/io")
             const helm = await io.which("helm", true)
             if (core.getInput("chart_upgrade") === "yes") {
                 await exec.exec(helm, [
@@ -185,7 +184,7 @@ jobs:
             }
       - name: set successful deploy status
         if: ${{ success() }}
-        uses: actions/github-script@v1
+        uses: actions/github-script@v2
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
           script: |
@@ -199,7 +198,7 @@ jobs:
             })
       - name: set unsuccessful deploy status
         if: ${{ failure() }}
-        uses: actions/github-script@v1
+        uses: actions/github-script@v2
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
           script: |
