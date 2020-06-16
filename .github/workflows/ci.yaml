@@ -78,6 +78,7 @@ jobs:
             core.setOutput("namespace",json.payload.namespace)
             core.setOutput("image_tag",json.payload.image_tag)
             core.setOutput("path",json.payload.path)
+      - name: create deployment status
         uses: actions/github-script@v1
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
