@@ -77,6 +77,7 @@ jobs:
             const workspace = process.env.GITHUB_WORKSPACE
             const payload = path.join(workspace,"deployment.json")
             const raw = await fsPromises.readFile(payload,"utf-8")
+            cont json = JSON.parse(raw)
             core.setOutput("deployment_id",json.id)
             core.setOutput("deployment_url",json.url)
             core.setOutput("cluster",json.payload.cluster)
