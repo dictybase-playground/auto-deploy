@@ -96,7 +96,7 @@ jobs:
                 deployment_id: core.getInput("deployment_id"),
                 log_url: core.getInput("deployment_url"),
                 state: "in_progress",
-                description: "deployment is in progress"
+                description: "deployment is in progress",
                 mediaType: {
                     format: "application/vnd.github.flash-preview+json"
                 }
