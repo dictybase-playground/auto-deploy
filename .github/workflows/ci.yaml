@@ -67,6 +67,7 @@ jobs:
         with:
           name: "automan"
       - name: extract information from deployment payload
+        id: deploy_info
         uses: actions/github-script@v2
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
@@ -76,8 +77,6 @@ jobs:
             const workspace = process.env.GITHUB_WORKSPACE
             const payload = path.join(workspace,"deployment.json")
             const raw = await fsPromises.readFile(payload,"utf-8")
-            const json = JSON.parse(raw)
-            console.log(json)
             core.setOutput("deployment_id",json.id)
             core.setOutput("deployment_url",json.url)
             core.setOutput("cluster",json.payload.cluster)
@@ -94,8 +93,8 @@ jobs:
             github.repos.createDeploymentStatus({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                deployment_id: core.getInput("deployment_id"),
-                log_url: core.getInput("deployment_url"),
+                deployment_id: ${{ steps.deploy_info.outputs.deployment_id }},
+                log_url: ${{ steps.deploy_info.outputs.deployment_url }},
                 state: "in_progress",
                 description: "deployment is in progress",
                 mediaType: {
@@ -125,9 +124,9 @@ jobs:
                 "container",
                 "clusters",
                 "get-credentials",
-                core.getInput("cluster"),
+                ${{ steps.deploy_info.outputs.cluster }},
                 "--zone",
-                core.getInput("zone")
+                ${{ steps.deploy_info.outputs.zone }}
             ]
             await exec.exec(gcloud, args)
       - name: set presence of chart
@@ -146,11 +145,11 @@ jobs:
                     output += data.toString()
                 }
             }
-            await exec.exec(helm, ["ls", core.getInput("chart"), "--output", "json"], options)
+            await exec.exec(helm, ["ls", ${{ steps.deploy_info.outputs.chart }}, "--output", "json"], options)
             core.setOutput("chart_upgrade","no")
             if (output) {
                 json = JSON.parse(output)
-                if json.Releases[0].Name === core.getInput("chart") {
+                if json.Releases[0].Name === ${{ steps.deploy_info.outputs.chart }} {
                     core.setOutput("chart_upgrade","yes")
                 }
             }
@@ -162,29 +161,29 @@ jobs:
           script: |
             const exec = require("@actions/exec")
             const helm = await io.which("helm", true)
-            if (core.getInput("chart_upgrade") === "yes") {
+            if ( ${{ steps.deploy_info.outputs.chart_upgrade }} === "yes") {
                 await exec.exec(helm, [
                     "upgrade",
-                    core.getInput("chart"),
+                    ${{ steps.deploy_info.outputs.chart }},
                     "--namespace",
-                    core.getInput("namespace"),
+                    ${{ steps.deploy_info.outputs.namespace }},
                     "--set",
-                    `image.tag=${core.getInput("image_tag")}`,
-                    core.getInput("path")
+                    'image.tag=' + ${{ steps.deploy_info.outputs.image_tag }},
+                    ${{ steps.deploy_info.outputs.path }}
                 ])
-                core.debug(`upgrade chart ${core.getInput("chart")} with image tag ${core.getInput("image_tag")}`)
+                core.debug('upgraded chart')
             } else {
                 await exec.exec(helm,[
                     "install",
                     "--name",
-                    core.getInput("chart"),
+                    ${{ steps.deploy_info.outputs.chart }},
                     "--namespace",
-                    core.getInput("namespace"),
+                    ${{ steps.deploy_info.outputs.namespace }},
                     "--set",
-                    `image.tag=${core.getInput("image_tag")}`,
-                    core.getInput("path")
+                    'image.tag=' + ${{ steps.deploy_info.outputs.image_tag }},
+                    ${{ steps.deploy_info.outputs.path }}
                 ])
-                core.debug(`install chart ${core.getInput("chart")} with image tag ${core.getInput("image_tag")}`)
+                core.debug('installed chart')
             }
       - name: set successful deploy status
         if: ${{ success() }}
@@ -195,9 +194,9 @@ jobs:
             $github.repos.createDeploymentStatus({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                deployment_id: core.getInput("deployment_id"),
+                deployment_id: ${{ steps.deploy_info.outputs.deployment_id }},
+                log_url: ${{ steps.deploy_info.outputs.deployment_url }},
                 state: "success",
-                log_url: core.getInput("deployment_url"),
                 description: "deployment is successful"
             })
       - name: set unsuccessful deploy status
@@ -209,8 +208,8 @@ jobs:
             github.repos.createDeploymentStatus({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                deployment_id: core.getInput("deployment_id"),
+                deployment_id: ${{ steps.deploy_info.outputs.deployment_id }},
+                log_url: ${{ steps.deploy_info.outputs.deployment_url }},
                 state: "error",
-                log_url: core.getInput("deployment_url"),
                 description: "deployment failed with error"
             })
