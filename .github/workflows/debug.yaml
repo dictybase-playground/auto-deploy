@@ -45,6 +45,8 @@ jobs:
           go build -o bin/actions cmd/github-actions/main.go
           echo "::add-path::$GITHUB_WORKSPACE/github-actions/bin"
           chmod +x bin/actions
+      - name: print deployment payload
+        run: echo deployment.json
       - name: extract information from deployment payload
         id: deploy_info
         run: actions --log-level debug sdp -f deployment.json
