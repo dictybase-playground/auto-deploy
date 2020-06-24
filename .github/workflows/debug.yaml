@@ -41,9 +41,10 @@ jobs:
       - name: build binary
         run: |
           cd github-actions
-          go build -o actions cmd/github-actions/main.go
-          chmod +x actions
-          cp actions /usr/local/bin/
+          mkdir bin
+          go build -o bin/actions cmd/github-actions/main.go
+          echo "::add-path::$GITHUB_WORKSPACE/github-actions/bin"
+          chmod +x bin/actions
       - name: extract information from deployment payload
         id: deploy_info
         run: actions --log-level debug sdp -f deployment.json
