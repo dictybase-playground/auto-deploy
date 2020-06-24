@@ -1,18 +1,68 @@
-name: Debug
-on: 
-  push:
-    branches:
-      - develop
+name: debug run
+on: pull_request
 jobs:
-  debug:
-    runs-on: ubuntu-20.04
+  prepare-deploy:
+    runs-on: ubuntu-18.04
     steps:
-      - name: what is in context
-        id: cluster
-        uses: actions/github-script@v1
+      - name: prepare for deploy
+        id: prepare_deploy
+        uses: dictybase-docker/prepare-deploy@v1
         with:
-          github-token: ${{secrets.GITHUB_TOKEN}}
-          debug: true
-          script: |
-            core.debug(JSON.stringify(context))
-            core.warning(JSON.stringify(context))
+          cluster-name: siddkube
+          cluster-zone: "us-central1-a"
+          namespace: dictybase
+          chart-name: automan
+          chart-path: deployments/charts/automan
+          token: ${{secrets.GITHUB_TOKEN}}
+          image-tag: sha-1b3c6e2
+          ref: develop
+          artifact: "automan"
+  deploy:
+    needs: prepare-deploy
+    runs-on: ubuntu-18.04
+    steps:
+      - name: check out code
+        uses: actions/checkout@v2
+      - name: download deployment artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: "automan"
+      - name: check out github actions code
+        uses: actions/checkout@v2
+        with:
+          repository: dictybase-docker/github-actions 
+          path: github-actions
+          ref: develop
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: setup golang
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.13.12
+      - name: build binary
+        run: |
+          cd github-actions
+          go build -o actions cmd/github-actions/main.go
+          chmod +x actions
+          cp actions /usr/local/bin/
+      - name: extract information from deployment payload
+        id: deploy_info
+        run: actions --log-level debug sdp -f deployment.json
+      - name: verify deployment information 
+        run: |
+          echo deploy_id ${{ steps.deploy_info.outputs.id }}
+          echo url ${{ steps.deploy_info.outputs.url }}
+      #- name: setup google cloud sdk
+        #uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
+        #with:
+          #version: '298.0.0'
+          #project_id: ${{ secrets.PROJECT_ID }}
+          #service_account_key: ${{ secrets.SA_KEY }}
+          #export_default_credentials: true
+      #- name: set up helm 
+        #uses: azure/setup-helm@v1
+        #with:
+          #version: 'v2.16.7'
+      #- name: get gcloud credentials for k8s cluster
+        #run: gcloud container clusters get-credentials --project ${{ secrets.PROJECT_ID }} --zone us-central1-a siddkube
+      #- name: deploy chart
+        #run: actions --log-level debug dc --name automan --namespace dictybase --image-tag sha-1b3c6e2 --path deployments/charts/automan
