@@ -49,7 +49,7 @@ jobs:
         id: deploy_info
         run: actions --log-level debug sdp -f deployment.json
       - name: create deployment status
-        run: actions --log-level debug -t ${{ secrets.GITHUB_TOKEN }} --owner ${{ github.repository_owner }} -r ${{ github.pull_request.head.repo.name }} ds --state in_progress  --deployment_id ${{ steps.deploy_info.outputs.id }} --url ${{ steps.deploy_info.outputs.url }}
+        run: actions --log-level debug -t ${{ secrets.GITHUB_TOKEN }} --owner ${{ github.repository_owner }} -r ${{ github.event.pull_request.head.repo.name }} ds --state in_progress  --deployment_id ${{ steps.deploy_info.outputs.id }} --url ${{ steps.deploy_info.outputs.url }}
       #- name: setup google cloud sdk
         #uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
         #with:
