@@ -45,13 +45,15 @@ jobs:
           go build -o bin/actions cmd/github-actions/main.go
           echo "::add-path::$GITHUB_WORKSPACE/github-actions/bin"
           chmod +x bin/actions
-      - name: extract information from deployment payload
-        id: deploy_info
-        run: actions --log-level debug sdp -f deployment.json
-      - name: verify deployment information 
-        run: |
-          echo deploy id ${{ steps.deploy_info.outputs.id }}
-          echo deploy url ${{ steps.deploy_info.outputs.url }}
+      - name: check payload
+        run: cat deployment.json
+      #- name: extract information from deployment payload
+        #id: deploy_info
+        #run: actions --log-level debug sdp -f deployment.json
+      #- name: verify deployment information 
+        #run: |
+          #echo deploy id ${{ steps.deploy_info.outputs.id }}
+          #echo deploy url ${{ steps.deploy_info.outputs.url }}
       #- name: setup google cloud sdk
         #uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
         #with:
