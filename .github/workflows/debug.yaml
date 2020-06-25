@@ -15,7 +15,7 @@ jobs:
           chart-path: deployments/charts/automan
           token: ${{secrets.GITHUB_TOKEN}}
           image-tag: sha-1b3c6e2
-          ref: develop
+          ref: feat/debug-deployment
           artifact: "automan"
   deploy:
     needs: prepare-deploy
