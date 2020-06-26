@@ -1,24 +1,38 @@
-name: debug run
+name: Pull checks
 on: pull_request
 jobs:
-  prepare-deploy:
+  build:
     runs-on: ubuntu-18.04
     steps:
+      - name: check out code
+        uses: actions/checkout@v2
+      - name: image build and push
+        uses: docker/build-push-action@v1
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_PASSWORD  }}
+          repository: dictybase/${{ github.event.pull_request.head.repo.name }}
+          add_git_labels: true
+          tag_with_sha: true
+          tag_with_ref: true
+          tags: ${{ github.sha }}
+          dockerfile: build/package/Dockerfile
       - name: prepare for deploy
+        if: ${{ success() }}
         id: prepare_deploy
         uses: dictybase-docker/prepare-deploy@v1
         with:
           cluster-name: siddkube
           cluster-zone: "us-central1-a"
           namespace: dictybase
-          chart-name: automan
+          chart-name: ${{ github.event.pull_request.head.repo.name }}
           chart-path: deployments/charts/automan
-          token: ${{secrets.GITHUB_TOKEN}}
-          image-tag: sha-1b3c6e2
-          ref: feat/debug-deployment
-          artifact: "automan"
+          token: ${{ secrets.GITHUB_TOKEN }}
+          image-tag: ${{ github.sha }}
+          ref: ${{ github.head_ref }}
+          artifact: ${{ github.event.pull_request.head.repo.name }}
   deploy:
-    needs: prepare-deploy
+    needs: build
     runs-on: ubuntu-18.04
     steps:
       - name: check out code
@@ -26,7 +40,7 @@ jobs:
       - name: download deployment artifact
         uses: actions/download-artifact@v2
         with:
-          name: "automan"
+          name: ${{ github.event.pull_request.head.repo.name }}
       - name: check out github actions code
         uses: actions/checkout@v2
         with:
@@ -48,7 +62,7 @@ jobs:
       - name: extract information from deployment payload
         id: deploy_info
         run: actions --log-level debug sdp -f deployment.json
-      - name: create progress deployment status
+      - name: set in_progress deployment status
         if: ${{ success() }}
         run: actions --log-level debug -t ${{ secrets.GITHUB_TOKEN }} --owner ${{ github.repository_owner }} -r ${{ github.event.pull_request.head.repo.name }} ds --state in_progress  --deployment_id ${{ steps.deploy_info.outputs.id }} --url ${{ steps.deploy_info.outputs.url }}
       - name: setup google cloud sdk
