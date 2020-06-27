@@ -18,7 +18,7 @@ jobs:
           add_git_labels: true
           tag_with_sha: true
           tag_with_ref: true
-          tags: pr-${{ github.event.pull_request.id }}-${{ steps.vars.outputs.short_sha }}
+          tags: pr-${{ github.event.pull_request.number }}-${{ steps.vars.outputs.short_sha }}
           dockerfile: build/package/Dockerfile
       - name: prepare for deploy
         if: ${{ success() }}
@@ -31,7 +31,7 @@ jobs:
           chart-name: ${{ github.event.pull_request.head.repo.name }}
           chart-path: deployments/charts/automan
           token: ${{ secrets.GITHUB_TOKEN }}
-          image-tag: pr-${{ github.event.pull_request.id }}-${{ steps.vars.outputs.short_sha }}
+          image-tag: pr-${{ github.event.pull_request.number }}-${{ steps.vars.outputs.short_sha }}
           ref: ${{ github.head_ref }}
           artifact: ${{ github.event.pull_request.head.repo.name }}
   deploy:
