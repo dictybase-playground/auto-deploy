@@ -1,4 +1,4 @@
-name: Continuos integration and deployment
+name: Continuous integration and deployment
 on: 
   push:
     branches:
@@ -9,55 +9,37 @@ jobs:
     steps:
       - name: check out code
         uses: actions/checkout@v2
+      - name: get short sha
+        id: vars
+        run: echo ::set-output name=short_sha::$(git rev-parse --short HEAD)
       - name: image build and push
         uses: docker/build-push-action@v1
         with:
           username: ${{ secrets.DOCKER_USER }}
           password: ${{ secrets.DOCKER_PASSWORD  }}
-          repository: dictybase/auto-deploy
+          repository: dictybase/${{ github.event.push.repository.name }}
           add_git_labels: true
+          tag_with_ref: true
           tag_with_sha: true
+          tags: develop-${{ steps.vars.outputs.short_sha }}
           dockerfile: build/package/Dockerfile
-
-  prepare-deploy:
-    needs: build
-    runs-on: ubuntu-20.04
-    steps:
-      - name: check out code
-        uses: actions/checkout@v2
-      - name: extract git sha
-        id: git_sha
-        run: |
-          value=`git rev-parse --short HEAD`
-          echo "::set-output name=git_sha_value::${value}"
-      - name: set cluster name
-        id: cluster
-        uses: actions/github-script@v2
-        with:
-          github-token: ${{secrets.GITHUB_TOKEN}}
-          script: |
-            login = context.payload.sender.login
-            core.setOutput("cluster_name","siddkube")
-            if (login === "wildlifehexagon") {
-              core.setOutput("cluster_name","erickube")
-            }
       - name: prepare for deploy
+        if: ${{ success() }}
         id: prepare_deploy
         uses: dictybase-docker/prepare-deploy@v1
         with:
-          cluster-name: ${{ steps.cluster.outputs.cluster_name }}
+          cluster-name: siddkube
           cluster-zone: "us-central1-a"
           namespace: dictybase
-          chart-name: automan
+          chart-name: ${{ github.event.push.repository.name }}
           chart-path: deployments/charts/automan
-          token: ${{secrets.GITHUB_TOKEN}}
-          image-tag: sha-${{steps.git_sha.outputs.git_sha_value}}
-          ref: ${{github.event.ref}} 
-          artifact: "automan"
-
+          token: ${{ secrets.GITHUB_TOKEN }}
+          image-tag: develop-${{ steps.vars.outputs.short_sha }}
+          ref: ${{ github.ref }}
+          artifact: ${{ github.event.push.repository.name }}
 
   deploy:
-    needs: prepare-deploy
+    needs: build
     runs-on: ubuntu-20.04
     steps:
       - name: check out code
@@ -65,47 +47,23 @@ jobs:
       - name: download deployment artifact
         uses: actions/download-artifact@v2
         with:
-          name: "automan"
+          name: ${{ github.event.push.repository.name }}
+      - name: download and setup path for github action binary
+        run: |
+          mkdir -p github-actions/bin
+          curl -L -o github-actions/bin/actions https://github.com/dictybase-docker/github-actions/releases/download/v0.0.2/action_0.0.2_Linux_x86_64
+          chmod +x github-actions/bin/actions
+          echo "::add-path::$GITHUB_WORKSPACE/github-actions/bin"
       - name: extract information from deployment payload
         id: deploy_info
-        uses: actions/github-script@v2
-        with:
-          github-token: ${{secrets.GITHUB_TOKEN}}
-          script: |
-            const path = require("path")
-            const fsPromises = require("fs").promises
-            const workspace = process.env.GITHUB_WORKSPACE
-            const payload = path.join(workspace,"deployment.json")
-            const raw = await fsPromises.readFile(payload,"utf-8")
-            const json = JSON.parse(raw)
-            core.setOutput("deployment_id",json.id)
-            core.setOutput("deployment_url",json.url)
-            core.setOutput("cluster",json.payload.cluster)
-            core.setOutput("zone",json.payload.zone)
-            core.setOutput("chart",json.payload.chart)
-            core.setOutput("namespace",json.payload.namespace)
-            core.setOutput("image_tag",json.payload.image_tag)
-            core.setOutput("path",json.payload.path)
-      - name: create deployment status
-        uses: actions/github-script@v2
-        with:
-          github-token: ${{secrets.GITHUB_TOKEN}}
-          script: |
-            github.repos.createDeploymentStatus({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                deployment_id: ${{ steps.deploy_info.outputs.deployment_id }},
-                log_url: ${{ steps.deploy_info.outputs.deployment_url }},
-                state: "in_progress",
-                description: "deployment is in progress",
-                mediaType: {
-                    format: "application/vnd.github.flash-preview+json"
-                }
-            })
+        run: actions --log-level debug sdp -f deployment.json
+      - name: set in_progress deployment status
+        if: ${{ success() }}
+        run: actions --log-level debug -t ${{ secrets.GITHUB_TOKEN }} --owner ${{ github.repository_owner }} -r ${{ github.event.push.repository.name }} ds --state in_progress  --deployment_id ${{ steps.deploy_info.outputs.id }} --url ${{ steps.deploy_info.outputs.url }}
       - name: setup google cloud sdk
         uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
         with:
-          version: '293.0.0'
+          version: '298.0.0'
           project_id: ${{ secrets.PROJECT_ID }}
           service_account_key: ${{ secrets.SA_KEY }}
           export_default_credentials: true
@@ -113,104 +71,14 @@ jobs:
         uses: azure/setup-helm@v1
         with:
           version: 'v2.16.7'
-      - name: get credentials
+      - name: get gcloud credentials for k8s cluster
+        run: gcloud container clusters get-credentials --project ${{ secrets.PROJECT_ID }} --zone ${{ steps.deploy_info.outputs.zone }} ${{ steps.deploy_info.outputs.cluster }}
+      - name: deploy chart
         if: ${{ success() }}
-        uses: actions/github-script@v2
-        with:
-          github-token: ${{secrets.GITHUB_TOKEN}}
-          script: |
-            const exec = require("@actions/exec")
-            const gcloud = await io.which("gcloud", true)
-            const args = [
-                "container",
-                "clusters",
-                "get-credentials",
-                ${{ steps.deploy_info.outputs.cluster }},
-                "--zone",
-                ${{ steps.deploy_info.outputs.zone }}
-            ]
-            await exec.exec(gcloud, args)
-      - name: set presence of chart
-        if: ${{ success() }}
-        uses: actions/github-script@v2
-        with:
-          github-token: ${{secrets.GITHUB_TOKEN}}
-          script: |
-            const exec = require("@actions/exec")
-            const helm = await io.which("helm", true)
-            await exec.exec(helm, ["version"])
-            const options = {}
-            let output
-            options.listeners = {
-                stdout: (data) => {
-                    output += data.toString()
-                }
-            }
-            await exec.exec(helm, ["ls", ${{ steps.deploy_info.outputs.chart }}, "--output", "json"], options)
-            core.setOutput("chart_upgrade","no")
-            if (output) {
-                json = JSON.parse(output)
-                if json.Releases[0].Name === ${{ steps.deploy_info.outputs.chart }} {
-                    core.setOutput("chart_upgrade","yes")
-                }
-            }
-      - name: install or upgrade chart
-        if: ${{ success() }}
-        uses: actions/github-script@v2
-        with:
-          github-token: ${{secrets.GITHUB_TOKEN}}
-          script: |
-            const exec = require("@actions/exec")
-            const helm = await io.which("helm", true)
-            if ( ${{ steps.deploy_info.outputs.chart_upgrade }} === "yes") {
-                await exec.exec(helm, [
-                    "upgrade",
-                    ${{ steps.deploy_info.outputs.chart }},
-                    "--namespace",
-                    ${{ steps.deploy_info.outputs.namespace }},
-                    "--set",
-                    'image.tag=' + ${{ steps.deploy_info.outputs.image_tag }},
-                    ${{ steps.deploy_info.outputs.path }}
-                ])
-                core.debug('upgraded chart')
-            } else {
-                await exec.exec(helm,[
-                    "install",
-                    "--name",
-                    ${{ steps.deploy_info.outputs.chart }},
-                    "--namespace",
-                    ${{ steps.deploy_info.outputs.namespace }},
-                    "--set",
-                    'image.tag=' + ${{ steps.deploy_info.outputs.image_tag }},
-                    ${{ steps.deploy_info.outputs.path }}
-                ])
-                core.debug('installed chart')
-            }
+        run: actions --log-level debug dc --name ${{ steps.deploy_info.outputs.chart }} --namespace ${{ steps.deploy_info.outputs.namespace }} --image-tag ${{ steps.deploy_info.outputs.image_tag }} --path ${{ steps.deploy_info.outputs.path }}
       - name: set successful deploy status
         if: ${{ success() }}
-        uses: actions/github-script@v2
-        with:
-          github-token: ${{secrets.GITHUB_TOKEN}}
-          script: |
-            $github.repos.createDeploymentStatus({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                deployment_id: ${{ steps.deploy_info.outputs.deployment_id }},
-                log_url: ${{ steps.deploy_info.outputs.deployment_url }},
-                state: "success",
-                description: "deployment is successful"
-            })
+        run: actions --log-level debug -t ${{ secrets.GITHUB_TOKEN }} --owner ${{ github.repository_owner }} -r ${{ github.event.push.repository.name }} ds --state success  --deployment_id ${{ steps.deploy_info.outputs.id }} --url ${{ steps.deploy_info.outputs.url }}
       - name: set unsuccessful deploy status
         if: ${{ failure() }}
-        uses: actions/github-script@v2
-        with:
-          github-token: ${{secrets.GITHUB_TOKEN}}
-          script: |
-            github.repos.createDeploymentStatus({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                deployment_id: ${{ steps.deploy_info.outputs.deployment_id }},
-                log_url: ${{ steps.deploy_info.outputs.deployment_url }},
-                state: "error",
-                description: "deployment failed with error"
-            })
+        run: actions --log-level debug -t ${{ secrets.GITHUB_TOKEN }} --owner ${{ github.repository_owner }} -r ${{ github.event.push.repository.name }} ds --state error  --deployment_id ${{ steps.deploy_info.outputs.id }} --url ${{ steps.deploy_info.outputs.url }}
