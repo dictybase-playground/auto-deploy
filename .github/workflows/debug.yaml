@@ -44,24 +44,12 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           name: ${{ github.event.pull_request.head.repo.name }}
-      - name: check out github actions code
-        uses: actions/checkout@v2
-        with:
-          repository: dictybase-docker/github-actions 
-          path: github-actions
-          ref: develop
-          token: ${{ secrets.GITHUB_TOKEN }}
-      - name: setup golang
-        uses: actions/setup-go@v2
-        with:
-          go-version: 1.13.12
-      - name: build binary
+      - name: download and setup path for github action binary
         run: |
-          cd github-actions
-          mkdir bin
-          go build -o bin/actions cmd/github-actions/main.go
+          mkdir -p github-actions/bin
+          curl -L -o github-actions/bin/actions https://github.com/dictybase-docker/github-actions/releases/download/v0.0.2/action_0.0.2_Linux_x86_64
+          chmod +x github-actions/bin/actions
           echo "::add-path::$GITHUB_WORKSPACE/github-actions/bin"
-          chmod +x bin/actions
       - name: extract information from deployment payload
         id: deploy_info
         run: actions --log-level debug sdp -f deployment.json
