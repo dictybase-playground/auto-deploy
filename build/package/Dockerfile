@@ -1,4 +1,4 @@
-FROM golang:1.13.10-buster AS builder
+FROM golang:1.13.12-buster AS builder
 COPY main.go .
 RUN go build -o /app main.go
 
