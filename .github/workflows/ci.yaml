@@ -17,7 +17,7 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USER }}
           password: ${{ secrets.DOCKER_PASSWORD  }}
-          repository: dictybase/${{ github.event.push.repository.name }}
+          repository: dictybase/${{ github.event.repository.name }}
           add_git_labels: true
           tag_with_ref: true
           tag_with_sha: true
@@ -31,12 +31,12 @@ jobs:
           cluster-name: siddkube
           cluster-zone: "us-central1-a"
           namespace: dictybase
-          chart-name: ${{ github.event.push.repository.name }}
+          chart-name: ${{ github.event.repository.name }}
           chart-path: deployments/charts/automan
           token: ${{ secrets.GITHUB_TOKEN }}
           image-tag: develop-${{ steps.vars.outputs.short_sha }}
           ref: ${{ github.ref }}
-          artifact: ${{ github.event.push.repository.name }}
+          artifact: ${{ github.event.repository.name }}
 
   deploy:
     needs: build
@@ -47,7 +47,7 @@ jobs:
       - name: download deployment artifact
         uses: actions/download-artifact@v2
         with:
-          name: ${{ github.event.push.repository.name }}
+          name: ${{ github.event.repository.name }}
       - name: download and setup path for github action binary
         run: |
           mkdir -p github-actions/bin
@@ -59,7 +59,7 @@ jobs:
         run: actions --log-level debug sdp -f deployment.json
       - name: set in_progress deployment status
         if: ${{ success() }}
-        run: actions --log-level debug -t ${{ secrets.GITHUB_TOKEN }} --owner ${{ github.repository_owner }} -r ${{ github.event.push.repository.name }} ds --state in_progress  --deployment_id ${{ steps.deploy_info.outputs.id }} --url ${{ steps.deploy_info.outputs.url }}
+        run: actions --log-level debug -t ${{ secrets.GITHUB_TOKEN }} --owner ${{ github.repository_owner }} -r ${{ github.event.repository.name }} ds --state in_progress  --deployment_id ${{ steps.deploy_info.outputs.id }} --url ${{ steps.deploy_info.outputs.url }}
       - name: setup google cloud sdk
         uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
         with:
@@ -78,7 +78,7 @@ jobs:
         run: actions --log-level debug dc --name ${{ steps.deploy_info.outputs.chart }} --namespace ${{ steps.deploy_info.outputs.namespace }} --image-tag ${{ steps.deploy_info.outputs.image_tag }} --path ${{ steps.deploy_info.outputs.path }}
       - name: set successful deploy status
         if: ${{ success() }}
-        run: actions --log-level debug -t ${{ secrets.GITHUB_TOKEN }} --owner ${{ github.repository_owner }} -r ${{ github.event.push.repository.name }} ds --state success  --deployment_id ${{ steps.deploy_info.outputs.id }} --url ${{ steps.deploy_info.outputs.url }}
+        run: actions --log-level debug -t ${{ secrets.GITHUB_TOKEN }} --owner ${{ github.repository_owner }} -r ${{ github.event.repository.name }} ds --state success  --deployment_id ${{ steps.deploy_info.outputs.id }} --url ${{ steps.deploy_info.outputs.url }}
       - name: set unsuccessful deploy status
         if: ${{ failure() }}
-        run: actions --log-level debug -t ${{ secrets.GITHUB_TOKEN }} --owner ${{ github.repository_owner }} -r ${{ github.event.push.repository.name }} ds --state error  --deployment_id ${{ steps.deploy_info.outputs.id }} --url ${{ steps.deploy_info.outputs.url }}
+        run: actions --log-level debug -t ${{ secrets.GITHUB_TOKEN }} --owner ${{ github.repository_owner }} -r ${{ github.event.repository.name }} ds --state error  --deployment_id ${{ steps.deploy_info.outputs.id }} --url ${{ steps.deploy_info.outputs.url }}
