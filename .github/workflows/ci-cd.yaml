@@ -1,7 +1,8 @@
-name: Continuous integration and deployment
+name: CI/CD 
 on: 
   push:
     branches:
+      - staging
       - develop
 jobs:
   build:
@@ -9,9 +10,11 @@ jobs:
     steps:
       - name: check out code
         uses: actions/checkout@v2
-      - name: get short sha
+      - name: extract sha and branch information
         id: vars
-        run: echo ::set-output name=short_sha::$(git rev-parse --short HEAD)
+        run: |
+          echo ::set-output name=short_sha::$(git rev-parse --short HEAD)
+          echo ::set-output name=branch::$(git rev-parse --abbrev-ref HEAD)
       - name: image build and push
         uses: docker/build-push-action@v1
         with:
@@ -21,7 +24,7 @@ jobs:
           add_git_labels: true
           tag_with_ref: true
           tag_with_sha: true
-          tags: develop-${{ steps.vars.outputs.short_sha }}
+          tags: ${{ steps.vars.outputs.branch }}-${{ steps.vars.outputs.short_sha }}
           dockerfile: build/package/Dockerfile
       - name: prepare for deploy
         if: ${{ success() }}
@@ -34,9 +37,10 @@ jobs:
           chart-name: ${{ github.event.repository.name }}
           chart-path: deployments/charts/automan
           token: ${{ secrets.GITHUB_TOKEN }}
-          image-tag: develop-${{ steps.vars.outputs.short_sha }}
+          image-tag: ${{ steps.vars.outputs.branch }}-${{ steps.vars.outputs.short_sha }}
           ref: ${{ github.ref }}
           artifact: ${{ github.event.repository.name }}
+          environment: staging
 
   deploy:
     needs: build
