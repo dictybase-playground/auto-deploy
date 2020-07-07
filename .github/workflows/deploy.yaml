@@ -1,35 +1,24 @@
 name: Deploy to kubernetes
 on: ['deployment']
 jobs:
-  before-deploy:
-    runs-on: ubuntu-20.04
-    steps:
-      - name: set queue deploy status
-        uses: actions/github-script@v1
-        with:
-          github-token: ${{secrets.GITHUB_TOKEN}}
-          script: |
-            github.repos.createDeploymentStatus({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                deployment_id: context.payload.id,
-                state: "in_progress",
-                log_url: context.payload.url,
-                description: "deployment is in progress"
-                mediaType: {
-                    format: "application/vnd.github.flash-preview+json"
-                }
-            })
   deploy:
-    needs: before-deploy
     runs-on: ubuntu-20.04
     steps:
       - name: check out code
         uses: actions/checkout@v2
+      - name: download and setup path for github action binary
+        run: |
+          mkdir -p github-actions/bin
+          curl -L -o github-actions/bin/actions https://github.com/dictybase-docker/github-actions/releases/download/v0.0.2/action_0.0.2_Linux_x86_64
+          chmod +x github-actions/bin/actions
+          echo "::add-path::$GITHUB_WORKSPACE/github-actions/bin"
+      - name: set in_progress deployment status
+        if: ${{ success() }}
+        run: actions --log-level debug -t ${{ secrets.GITHUB_TOKEN }} --owner ${{ github.repository_owner }} -r ${{ github.event.repository.name }} ds --state in_progress  --deployment_id ${{ github.event.deployment.id }} --url ${{ github.event.deployment.url }}
       - name: setup google cloud sdk
         uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
         with:
-          version: '293.0.0'
+          version: '299.0.0'
           project_id: ${{ secrets.PROJECT_ID }}
           service_account_key: ${{ secrets.SA_KEY }}
           export_default_credentials: true
@@ -38,36 +27,13 @@ jobs:
         with:
           version: 'v2.16.7'
       - name: get credentials
-        run: gcloud container clusters get-credentials ${{github.event.deployment.payload.cluster}} --zone  ${{github.event.deployment.payload.zone}}
-      - name: check helm connectivity
-        run: helm version
-      - name: set presence of chart
-        id: chart_value
-        run: |
-          value=''
-          if helm ls ${{github.event.deployment.payload.chart}}| grep DEPLOYED| cut -f4; then value=yes; fi
-          echo "::set-output name=chart_upgrade::${value}"
-      - name: install chart
-        if: steps.chart_value.outputs.chart_upgrade == 0
-        run: helm install --name ${{github.event.deployment.payload.chart}} --namespace ${{github.event.deployment.payload.namespace}} --set image.tag=${{github.event.deployment.payload.image_tag}} ${{github.event.deployment.payload.path}}
-      - name: upgrade chart
-        if: steps.chart_value.outputs.chart_upgrade != 0
-        run: helm upgrade ${{github.event.deployment.payload.chart}} --namespace ${{github.event.deployment.payload.namespace}} --set image.tag=${{github.event.deployment.payload.image_tag}} ${{github.event.deployment.payload.path}}
-
-  after-deploy:
-    needs: deploy
-    runs-on: ubuntu-20.04
-    steps:
-      - name: set final deploy status
-        uses: actions/github-script@v1
-        with:
-          github-token: ${{secrets.GITHUB_TOKEN}}
-          script: |
-            github.repos.createDeploymentStatus({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                deployment_id: context.payload.id,
-                state: "success",
-                log_url: context.payload.url,
-                description: "deployment is in progress"
-            })
+        run: gcloud container clusters get-credentials --project ${{ secrets.PROJECT_ID }} --zone ${{ github.event.deployment.payload.zone }} ${{ github.event.deployment.payload.cluster }} 
+      - name: deploy chart
+        if: ${{ success() }}
+        run: actions --log-level debug dc --name ${{ github.event.deployment.payload.chart }} --namespace ${{ github.event.deployment.payload.namespace }} --image-tag ${{ github.event.deployment.payload.image_tag }} --path ${{ github.event.deployment.payload.path }}
+      - name: set successful deploy status
+        if: ${{ success() }}
+        run: actions --log-level debug -t ${{ secrets.GITHUB_TOKEN }} --owner ${{ github.repository_owner }} -r ${{ github.event.repository.name }} ds --state success  --deployment_id ${{ github.event.deployment.id }} --url ${{ github.event.deployment.url }}
+      - name: set unsuccessful deploy status
+        if: ${{ failure() }}
+        run: actions --log-level debug -t ${{ secrets.GITHUB_TOKEN }} --owner ${{ github.repository_owner }} -r ${{ github.event.repository.name }} ds --state error  --deployment_id ${{ github.event.deployment.id }} --url ${{ github.event.deployment.url }}

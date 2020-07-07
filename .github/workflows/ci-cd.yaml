@@ -67,7 +67,7 @@ jobs:
       - name: setup google cloud sdk
         uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
         with:
-          version: '298.0.0'
+          version: '299.0.0'
           project_id: ${{ secrets.PROJECT_ID }}
           service_account_key: ${{ secrets.SA_KEY }}
           export_default_credentials: true
