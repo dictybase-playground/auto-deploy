@@ -1,4 +1,4 @@
-name: Pull checks
+name: Pull checks and deploy to kubernetes
 on: pull_request
 jobs:
   build:
