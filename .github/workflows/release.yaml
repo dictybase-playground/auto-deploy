@@ -36,7 +36,7 @@ jobs:
           chart-path: deployments/charts/automan
           token: ${{ secrets.GITHUB_TOKEN }}
           image-tag: ${{ steps.vars.outputs.tag }}
-          ref: ${{ github.ref }}
+          ref: ${{ steps.vars.outputs.tag }}
           artifact: ${{ github.event.repository.name }}
           environment: production
 
