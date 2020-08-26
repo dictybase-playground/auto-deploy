@@ -22,7 +22,7 @@ jobs:
         uses: actions/github-script@v3
         with:
           script: |
-            if ($GITHUB_ACTOR === "wildlifehexagon") {
+            if (github.actor === "wildlifehexagon") {
               return "okay!"
             }
   # build:
