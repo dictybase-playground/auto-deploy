@@ -15,6 +15,14 @@ jobs:
               repo: context.repo.repo,
               labels: ['deploy']
             })
+      - name: get actor
+        id: actor
+        run: echo ${context.actor}
+      - name: print actor
+        uses: actions/github-script@v3
+          with:
+            script: |
+              console.log(actor)      
   # build:
   #   runs-on: ubuntu-latest
   #   steps:
