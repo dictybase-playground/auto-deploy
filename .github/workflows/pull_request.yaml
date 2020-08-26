@@ -8,7 +8,6 @@ jobs:
         uses: actions/github-script@v3
         with:
           script: |
-            console.log(context)
             github.issues.addLabels({
               issue_number: context.issue.number,
               owner: context.repo.owner,
@@ -34,32 +33,32 @@ jobs:
           fi
       - name: print cluster
         run: echo '${{ steps.vars.outputs.cluster }}'
-      # - name: image build and push
-      #   uses: docker/build-push-action@v1
-      #   with:
-      #     username: ${{ secrets.DOCKER_USER }}
-      #     password: ${{ secrets.DOCKER_PASSWORD  }}
-      #     repository: dictybase/${{ github.event.pull_request.head.repo.name }}
-      #     add_git_labels: true
-      #     tag_with_sha: true
-      #     tag_with_ref: true
-      #     tags: pr-${{ github.event.pull_request.number }}-${{ steps.vars.outputs.short_sha }}
-      #     dockerfile: build/package/Dockerfile
-      # - name: prepare for deploy
-      #   if: ${{ success() }}
-      #   id: prepare_deploy
-      #   uses: dictybase-docker/prepare-deploy@v1.3.1
-      #   with:
-      #     cluster-name: ${{ steps.vars.outputs.cluster }}
-      #     cluster-zone: "us-central1-a"
-      #     namespace: dictybase
-      #     chart-name: ${{ github.event.pull_request.head.repo.name }}
-      #     chart-path: deployments/charts/automan
-      #     token: ${{ secrets.GITHUB_TOKEN }}
-      #     image-tag: pr-${{ github.event.pull_request.number }}-${{ steps.vars.outputs.short_sha }}
-      #     ref: ${{ github.head_ref }}
-      #     artifact: ${{ github.event.pull_request.head.repo.name }}
-      #     environment: development
+      - name: image build and push
+        uses: docker/build-push-action@v1
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_PASSWORD  }}
+          repository: dictybase/${{ github.event.pull_request.head.repo.name }}
+          add_git_labels: true
+          tag_with_sha: true
+          tag_with_ref: true
+          tags: pr-${{ github.event.pull_request.number }}-${{ steps.vars.outputs.short_sha }}-${{ steps.vars.outputs.cluster }}
+          dockerfile: build/package/Dockerfile
+      - name: prepare for deploy
+        if: ${{ success() }}
+        id: prepare_deploy
+        uses: dictybase-docker/prepare-deploy@v1.3.1
+        with:
+          cluster-name: ${{ steps.vars.outputs.cluster }}
+          cluster-zone: "us-central1-a"
+          namespace: dictybase
+          chart-name: ${{ github.event.pull_request.head.repo.name }}
+          chart-path: deployments/charts/automan
+          token: ${{ secrets.GITHUB_TOKEN }}
+          image-tag: pr-${{ github.event.pull_request.number }}-${{ steps.vars.outputs.short_sha }}
+          ref: ${{ github.head_ref }}
+          artifact: ${{ github.event.pull_request.head.repo.name }}
+          environment: development
   # deploy:
   #   runs-on: ubuntu-latest
   #   steps:
