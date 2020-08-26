@@ -1,21 +1,8 @@
 name: Pull Request Deployment
 on: pull_request
 jobs:
-  label:
-    runs-on: ubuntu-latest
-    steps:
-      - name: add deployment label
-        uses: actions/github-script@v3
-        with:
-          script: |
-            console.log(github)
-            github.issues.addLabels({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              labels: ['deploy']
-            })
   build:
+    if: ${{ contains(github.event.pull_request.issue.labels.*.name, "deploy") }}
     runs-on: ubuntu-latest
     steps:
       - name: check out code
@@ -32,8 +19,6 @@ jobs:
           then
             echo ::set-output name=cluster::"siddkube"
           fi
-      - name: print cluster
-        run: echo '${{ steps.vars.outputs.cluster }}'
       - name: image build and push
         uses: docker/build-push-action@v1
         with:
@@ -92,7 +77,7 @@ jobs:
       - name: set up helm
         uses: azure/setup-helm@v1
         with:
-          version: "v2.16.7"
+          version: "v2.16.9"
       - name: get gcloud credentials for k8s cluster
         run: gcloud container clusters get-credentials --project ${{ secrets.PROJECT_ID }} --zone ${{ steps.deploy_info.outputs.zone }} ${{ steps.deploy_info.outputs.cluster }}
       - name: deploy chart
