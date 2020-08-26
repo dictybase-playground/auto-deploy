@@ -1,7 +1,7 @@
 name: Pull Request Deployment
 on:
   pull_request:
-    types: [assigned, labeled, opened, synchronize]
+    types: [labeled, synchronize]
 jobs:
   build:
     if: ${{ contains(github.event.pull_request.labels.*.name, 'deploy') }}
@@ -12,7 +12,7 @@ jobs:
       - name: Dump GitHub context
         env:
           GITHUB_CONTEXT: ${{ toJson(github) }}
-        run: echo "$GITHUB_CONTEXT"
+        run: echo "$GITHUB_CONTEXT" && github.event.pull_request.user.login
       - name: get short sha and cluster name
         id: vars
         run: |
@@ -39,7 +39,7 @@ jobs:
       - name: prepare for deploy
         if: ${{ success() }}
         id: prepare_deploy
-        uses: dictybase-docker/prepare-deploy@v1.3.1
+        uses: dictybase-docker/prepare-deploy@v1
         with:
           cluster-name: ${{ steps.vars.outputs.cluster }}
           cluster-zone: "us-central1-a"
