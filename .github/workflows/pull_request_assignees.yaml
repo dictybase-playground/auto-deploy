@@ -12,6 +12,8 @@ jobs:
     steps:
       - name: check out code
         uses: actions/checkout@v2
+      - name: print
+        run: echo ${{matrix.assignee}}
       - name: get short sha and cluster name
         id: vars
         run: |
