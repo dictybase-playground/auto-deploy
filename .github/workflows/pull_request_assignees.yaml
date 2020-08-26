@@ -6,7 +6,7 @@ jobs:
   build:
     strategy:
       matrix:
-        assignees: github.event.pull_request.assignees.*.login
+        assignee: ${{ github.event.pull_request.assignees.*.login }}
     if: ${{ contains(github.event.pull_request.labels.*.name, 'deploy') }}
     runs-on: ubuntu-latest
     steps:
@@ -16,11 +16,11 @@ jobs:
         id: vars
         run: |
           echo ::set-output name=short_sha::$(git rev-parse --short HEAD)
-          if [ ${{github.event.pull_request.user.login}} == "wildlifehexagon" ]
+          if [ ${{matrix.assignee}} == "wildlifehexagon" ]
           then
             echo ::set-output name=cluster::"erickube"
             echo ::set-output name=docker_path::"build/package/Dockerfile"
-          elif [ ${{github.event.pull_request.user.login}} == "cybersiddhu" ]
+          elif [ ${{matrix.assignee}} == "cybersiddhu" ]
           then
             echo ::set-output name=cluster::"siddkube"
             echo ::set-output name=docker_path::"docker/sidd-dev/Dockerfile"
