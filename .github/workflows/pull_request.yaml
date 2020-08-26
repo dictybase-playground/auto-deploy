@@ -8,6 +8,7 @@ jobs:
         uses: actions/github-script@v3
         with:
           script: |
+            console.log(github)
             github.issues.addLabels({
               issue_number: context.issue.number,
               owner: context.repo.owner,
