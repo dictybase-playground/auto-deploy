@@ -15,14 +15,11 @@ jobs:
               repo: context.repo.repo,
               labels: ['deploy']
             })
-      - name: get actor
-        id: vars
-        run: echo ::set-output name=actor::"$GITHUB_ACTOR"
       - name: print actor
         uses: actions/github-script@v3
         with:
           script: |
-            if (${{steps.vars.outputs.actor}} === "wildlifehexagon") {
+            if ($GITHUB_ACTOR === "wildlifehexagon") {
               console.log("okay!")
             }
   # build:
