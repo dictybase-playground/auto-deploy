@@ -55,6 +55,9 @@ jobs:
           artifact: ${{ github.event.pull_request.head.repo.name }}
           environment: development
   deploy:
+    strategy:
+      matrix:
+        assignee: ${{ github.event.pull_request.assignees.*.login }}
     runs-on: ubuntu-latest
     needs: build
     steps:
