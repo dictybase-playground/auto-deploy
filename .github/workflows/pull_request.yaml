@@ -65,6 +65,10 @@ jobs:
     steps:
       - name: check out code
         uses: actions/checkout@v2
+      - name: download deployment artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: ${{ github.event.repository.name }}
       - name: download and setup path for github action binary
         run: |
           mkdir -p github-actions/bin
