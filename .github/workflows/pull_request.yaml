@@ -18,10 +18,10 @@ jobs:
       - name: set cluster
         id: vars
         run: |
-          if (${GITHUB_ACTOR} === "wildlifehexagon") {
+          if ${GITHUB_ACTOR} == "wildlifehexagon" {
             echo ::set-output name=cluster::"erickube"
           }
-          if (${GITHUB_ACTOR} === "cybersiddhu") {
+          if ${GITHUB_ACTOR} == "cybersiddhu" {
             echo ::set-output name=cluster::"siddkube"
           }
       - name: print cluster
