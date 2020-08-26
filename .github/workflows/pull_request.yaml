@@ -75,6 +75,9 @@ jobs:
           curl -L -o github-actions/bin/actions https://github.com/dictybase-docker/github-actions/releases/download/v0.0.2/action_0.0.2_Linux_x86_64
           chmod +x github-actions/bin/actions
           echo "::add-path::$GITHUB_WORKSPACE/github-actions/bin"
+      - name: extract information from deployment payload
+        id: deploy_info
+        run: actions --log-level debug sdp -f deployment.json
       - name: set in_progress deployment status
         if: ${{ success() }}
         run: actions --log-level debug -t ${{ secrets.GITHUB_TOKEN }} --owner ${{ github.repository_owner }} -r ${{ github.event.repository.name }} ds --state in_progress  --deployment_id ${{ github.event.deployment.id }} --url ${{ github.event.deployment.url }}
