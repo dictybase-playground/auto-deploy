@@ -18,12 +18,14 @@ jobs:
       - name: set cluster
         id: vars
         run: |
-          if ${GITHUB_ACTOR} == "wildlifehexagon" {
+          if [ $GITHUB_ACTOR == "wildlifehexagon" ]
+          then
             echo ::set-output name=cluster::"erickube"
-          }
-          if ${GITHUB_ACTOR} == "cybersiddhu" {
+          fi
+          if [ $GITHUB_ACTOR == "cybersiddhu" ]
+          then
             echo ::set-output name=cluster::"siddkube"
-          }
+          fi
       - name: print cluster
         run: echo $steps.vars.outputs.cluster
   # build:
