@@ -8,12 +8,12 @@ jobs:
         uses: actions/github-script@v3
         with:
           script: |
-            console.log(github)
+            console.log(context)
             github.issues.addLabels({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              labels: ['Deploy']
+              labels: ['deploy']
             })
   # build:
   #   runs-on: ubuntu-latest
