@@ -12,8 +12,6 @@ jobs:
     steps:
       - name: check out code
         uses: actions/checkout@v2
-      - name: print
-        run: echo ${{matrix.assignee}}
       - name: get short sha and cluster name
         id: vars
         run: |
@@ -21,9 +19,11 @@ jobs:
           if [ ${{matrix.assignee}} == "wildlifehexagon" ]
           then
             echo ::set-output name=cluster::"erickube"
+            echo ::set-output name=docker_path::"build/package/Dockerfile"
           elif [ ${{matrix.assignee}} == "cybersiddhu" ]
           then
             echo ::set-output name=cluster::"siddkube"
+            echo ::set-output name=docker_path::"docker/sidd-dev/Dockerfile"
           else
             exit 1
           fi
