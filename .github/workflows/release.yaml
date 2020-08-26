@@ -1,8 +1,8 @@
 name: Tag based production deployment to kubernetes
-on: 
+on:
   push:
     tags:
-      - '*'
+      - "*"
 jobs:
   build:
     runs-on: ubuntu-20.04
@@ -65,14 +65,14 @@ jobs:
       - name: setup google cloud sdk
         uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
         with:
-          version: '298.0.0'
+          version: "298.0.0"
           project_id: ${{ secrets.PROJECT_ID }}
           service_account_key: ${{ secrets.SA_KEY }}
           export_default_credentials: true
-      - name: set up helm 
+      - name: set up helm
         uses: azure/setup-helm@v1
         with:
-          version: 'v2.16.7'
+          version: "v2.16.7"
       - name: get gcloud credentials for k8s cluster
         run: gcloud container clusters get-credentials --project ${{ secrets.PROJECT_ID }} --zone ${{ steps.deploy_info.outputs.zone }} ${{ steps.deploy_info.outputs.cluster }}
       - name: deploy chart
