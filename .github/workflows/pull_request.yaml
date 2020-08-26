@@ -2,7 +2,7 @@ name: Pull Request Deployment
 on: pull_request
 jobs:
   build:
-    if: ${{ contains(github.event.pull_request.issue.labels.*.name, 'deploy') }}
+    if: ${{ contains(github.event.pull_request.labels.*.name, 'deploy') }}
     runs-on: ubuntu-latest
     steps:
       - name: check out code
