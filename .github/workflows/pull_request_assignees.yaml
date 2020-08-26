@@ -19,11 +19,9 @@ jobs:
           if [ ${{matrix.assignee}} == "wildlifehexagon" ]
           then
             echo ::set-output name=cluster::"erickube"
-            echo ::set-output name=docker_path::"build/package/Dockerfile"
           elif [ ${{matrix.assignee}} == "cybersiddhu" ]
           then
             echo ::set-output name=cluster::"siddkube"
-            echo ::set-output name=docker_path::"docker/sidd-dev/Dockerfile"
           else
             exit 1
           fi
@@ -38,7 +36,7 @@ jobs:
           tag_with_sha: true
           tag_with_ref: true
           tags: pr-${{ github.event.pull_request.number }}-${{ steps.vars.outputs.short_sha }}
-          dockerfile: ${{ steps.vars.outputs.docker_path }}
+          dockerfile: build/package/Dockerfile # ${{ steps.vars.outputs.docker_path }}
       - name: prepare for deploy
         if: ${{ success() }}
         id: prepare_deploy
