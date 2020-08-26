@@ -9,6 +9,10 @@ jobs:
     steps:
       - name: check out code
         uses: actions/checkout@v2
+      - name: Dump GitHub context
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+        run: echo "$GITHUB_CONTEXT"
       - name: get short sha and cluster name
         id: vars
         run: |
