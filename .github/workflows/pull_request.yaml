@@ -16,12 +16,14 @@ jobs:
           if [ ${{github.event.pull_request.user.login}} == "wildlifehexagon" ]
           then
             echo ::set-output name=cluster::"erickube"
-          fi
-          if [ ${{github.event.pull_request.user.login}} == "cybersiddhu" ]
+          elif [ ${{github.event.pull_request.user.login}} == "cybersiddhu" ]
           then
             echo ::set-output name=cluster::"siddkube"
+          else
+            exit 1
           fi
       - name: image build and push
+        if: ${{ success() }}
         uses: docker/build-push-action@v1
         with:
           username: ${{ secrets.DOCKER_USER }}
