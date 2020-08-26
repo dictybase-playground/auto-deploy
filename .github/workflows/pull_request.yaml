@@ -17,17 +17,15 @@ jobs:
             })
       - name: set cluster
         id: vars
-        with:
-          run: |
-            if ($GITHUB_ACTOR === "wildlifehexagon") {
-              echo ::set-output name=cluster::"erickube"
-            }
-            if ($GITHUB_ACTOR === "cybersiddhu") {
-              echo ::set-output name=cluster::"siddkube"
-            }
+        run: |
+          if ($GITHUB_ACTOR === "wildlifehexagon") {
+            echo ::set-output name=cluster::"erickube"
+          }
+          if ($GITHUB_ACTOR === "cybersiddhu") {
+            echo ::set-output name=cluster::"siddkube"
+          }
       - name: print cluster
-        with:
-          run: echo $steps.vars.outputs.cluster
+        run: echo $steps.vars.outputs.cluster
   # build:
   #   runs-on: ubuntu-latest
   #   steps:
