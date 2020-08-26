@@ -15,7 +15,7 @@ jobs:
               repo: context.repo.repo,
               labels: ['deploy']
             })
-      - name: print cluster
+      - name: set cluster
         id: vars
         with:
           run: |
@@ -26,7 +26,8 @@ jobs:
               echo ::set-output name=cluster::"siddkube"
             }
       - name: print cluster
-        run: echo $steps.vars.outputs.cluster
+        with:
+          run: echo $steps.vars.outputs.cluster
   # build:
   #   runs-on: ubuntu-latest
   #   steps:
