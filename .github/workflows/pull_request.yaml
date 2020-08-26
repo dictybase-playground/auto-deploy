@@ -1,7 +1,7 @@
 name: Pull Request Deployment
 on:
   pull_request:
-    types: [assigned, labeled, opened, synchronize]
+    types: [assigned, labeled, opened]
 jobs:
   build:
     if: ${{ contains(github.event.pull_request.labels.*.name, 'deploy') }}
