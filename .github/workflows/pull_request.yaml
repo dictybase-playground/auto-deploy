@@ -17,12 +17,12 @@ jobs:
             })
       - name: get actor
         id: actor
-        run: echo "$GITHUB_ACTOR"
+        run: echo ::set-output name=actor::"$GITHUB_ACTOR"
       - name: print actor
         uses: actions/github-script@v3
         with:
           script: |
-            console.log(actor)
+            console.log(steps.actor.outputs.actor)
   # build:
   #   runs-on: ubuntu-latest
   #   steps:
