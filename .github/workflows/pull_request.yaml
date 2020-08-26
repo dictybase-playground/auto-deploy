@@ -27,7 +27,7 @@ jobs:
             echo ::set-output name=cluster::"siddkube"
           fi
       - name: print cluster
-        run: echo $steps.vars.outputs.cluster
+        run: echo '${{ steps.vars.outputs.cluster }}'
   # build:
   #   runs-on: ubuntu-latest
   #   steps:
