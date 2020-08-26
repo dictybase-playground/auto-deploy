@@ -17,7 +17,7 @@ jobs:
             })
       - name: get actor
         id: actor
-        run: echo ${context.actor}
+        run: echo "$GITHUB_ACTOR"
       - name: print actor
         uses: actions/github-script@v3
         with:
