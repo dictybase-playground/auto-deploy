@@ -9,19 +9,15 @@ jobs:
     steps:
       - name: check out code
         uses: actions/checkout@v2
-      - name: Dump GitHub context
-        env:
-          GITHUB_CONTEXT: ${{ toJson(github) }}
-        run: echo ${{github.event.pull_request.user.login}}
       - name: get short sha and cluster name
         id: vars
         run: |
           echo ::set-output name=short_sha::$(git rev-parse --short HEAD)
-          if [ $GITHUB_ACTOR == "wildlifehexagon" ]
+          if [ ${{github.event.pull_request.user.login}} == "wildlifehexagon" ]
           then
             echo ::set-output name=cluster::"erickube"
           fi
-          if [ $GITHUB_ACTOR == "cybersiddhu" ]
+          if [ ${{github.event.pull_request.user.login}} == "cybersiddhu" ]
           then
             echo ::set-output name=cluster::"siddkube"
           fi
