@@ -12,7 +12,7 @@ jobs:
       - name: Dump GitHub context
         env:
           GITHUB_CONTEXT: ${{ toJson(github) }}
-        run: echo ${{github.event.pull_request}}
+        run: echo ${{github.event.pull_request.user.login}}
       - name: get short sha and cluster name
         id: vars
         run: |
