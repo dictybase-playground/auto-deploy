@@ -16,11 +16,11 @@ jobs:
         id: vars
         run: |
           echo ::set-output name=short_sha::$(git rev-parse --short HEAD)
-          if [ ${{matrix.assignee}} == "wildlifehexagon" ]
+          if [ ${{ matrix.assignee }} == "wildlifehexagon" ]
           then
             echo ::set-output name=cluster::"erickube"
             echo ::set-output name=docker_path::"build/package/Dockerfile"
-          elif [ ${{matrix.assignee}} == "cybersiddhu" ]
+          elif [ ${{ matrix.assignee }} == "cybersiddhu" ]
           then
             echo ::set-output name=cluster::"siddkube"
             echo ::set-output name=docker_path::"docker/sidd-dev/Dockerfile"
@@ -52,7 +52,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           image-tag: pr-${{ github.event.pull_request.number }}-${{ steps.vars.outputs.short_sha }}
           ref: ${{ github.head_ref }}
-          artifact: ${{ github.event.pull_request.head.repo.name }}
+          artifact: ${{ matrix.assignee }}-${{ github.event.pull_request.head.repo.name }}
           environment: development
   deploy:
     strategy:
