@@ -19,7 +19,7 @@ jobs:
           if [ ${{github.event.pull_request.user.login}} == "wildlifehexagon" ]
           then
             echo ::set-output name=cluster::"erickube"
-            echo ::set-output name=docker_path::"docker/eric-dev/Dockerfile"
+            echo ::set-output name=docker_path::"build/package/Dockerfile"
           elif [ ${{github.event.pull_request.user.login}} == "cybersiddhu" ]
           then
             echo ::set-output name=cluster::"siddkube"
