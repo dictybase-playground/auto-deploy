@@ -16,13 +16,15 @@ jobs:
               labels: ['deploy']
             })
       - name: get actor
-        id: actor
+        id: vars
         run: echo ::set-output name=actor::"$GITHUB_ACTOR"
       - name: print actor
         uses: actions/github-script@v3
         with:
           script: |
-            console.log(${{steps.actor.outputs.actor}})
+            if (${{steps.vars.outputs.actor}} === "wildlifehexagon") {
+              console.log("okay!")
+            }
   # build:
   #   runs-on: ubuntu-latest
   #   steps:
