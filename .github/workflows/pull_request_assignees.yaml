@@ -1,9 +1,12 @@
-name: Pull Request Deployment (frontend)
+name: Pull Request Deployment Assignees (frontend)
 on:
   pull_request:
-    types: [labeled, synchronize]
+    types: [assigned, synchronize]
 jobs:
   build:
+    strategy:
+      matrix:
+        assignees: github.event.pull_request.assignees.*.login
     if: ${{ contains(github.event.pull_request.labels.*.name, 'deploy') }}
     runs-on: ubuntu-latest
     steps:
