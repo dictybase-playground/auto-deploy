@@ -11,4 +11,4 @@ jobs:
         with:
           token: ${{ secrets.REPO_ACCESS_TOKEN }}
           commands: example
-          repository: dictybase-playground/github-actions-experiments
+          # repository: dictybase-playground/github-actions-experiments
