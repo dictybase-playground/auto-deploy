@@ -48,8 +48,9 @@ jobs:
 
           if [[ ! -z "$branch" ]]
           then
+            conv_branch_name=${branch//[/]/-}
             ref="$branch"
-            image_tag="$($branch | tr / -)-$short_sha"
+            image_tag="$conv_branch_name-$short_sha"
           fi
 
           if [[ ! -z "$commit" ]]
