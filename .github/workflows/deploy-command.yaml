@@ -49,7 +49,7 @@ jobs:
           if [[ ! -z "$branch" ]]
           then
             ref="$branch"
-            image_tag="$(git symbolic-ref -q HEAD | sed -e 's|^refs/heads/||' -e 's~/~-~')-$short_sha"
+            image_tag="$($branch | tr / -)-$short_sha"
           fi
 
           if [[ ! -z "$commit" ]]
