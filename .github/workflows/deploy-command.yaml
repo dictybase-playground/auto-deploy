@@ -61,6 +61,11 @@ jobs:
           echo ::set-output name=ref::$ref
           echo ::set-output name=image_tag::$image_tag
           echo ::set-output name=cluster::$cluster
+      - name: print vars
+        run: |
+          echo ${{ steps.vars.outputs.ref }}
+          echo ${{ steps.vars.outputs.cluster }}
+          echo ${{ steps.vars.outputs.image_tag }}
       - name: image build and push
         if: ${{ success() }}
         uses: docker/build-push-action@v1
