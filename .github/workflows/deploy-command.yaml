@@ -14,9 +14,9 @@ jobs:
       - name: extract and set vars
         id: vars
         run: |
-          branch=${{ github.event.client_payload.slash_command.args.named.branch }}
-          if [[ -z "$branch" ]]; then branch="develop"; fi
-          echo ::set-output name=branch::$branch
+          ref=${{ github.event.client_payload.slash_command.args.named.ref }}
+          if [[ -z "$ref" ]]; then ref="develop"; fi
+          echo ::set-output name=ref::$ref
           cluster=${{ github.event.client_payload.slash_command.args.named.cluster }}
           if [[ -z "$cluster" ]]; then exit 1; fi
           echo ::set-output name=cluster::$cluster
@@ -54,7 +54,7 @@ jobs:
           chart-path: deployments/charts/automan
           token: ${{ secrets.GITHUB_TOKEN }}
           image-tag: pr-${{ github.event.client_payload.pull_request.number }}-${{ steps.vars.outputs.short_sha }}
-          ref: ${{ steps.vars.outputs.branch }}
+          ref: ${{ steps.vars.outputs.ref }}
           artifact: ${{ github.event.client_payload.pull_request.head.repo.name }}
           environment: development
   deploy:
