@@ -56,11 +56,11 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USER }}
           password: ${{ secrets.DOCKER_PASSWORD  }}
-          repository: dictybase/${{ github.event.pull_request.head.repo.name }}
+          repository: dictybase/${{ github.event.client_payload.pull_request.head.repo.name }}
           add_git_labels: true
           tag_with_sha: true
           tag_with_ref: true
-          tags: pr-${{ github.event.pull_request.number }}-${{ steps.vars.outputs.short_sha }}
+          tags: pr-${{ github.event.client_payload.pull_request.number }}-${{ steps.vars.outputs.short_sha }}
           dockerfile: build/package/Dockerfile
       - name: prepare for deploy
         if: ${{ success() }}
@@ -70,12 +70,12 @@ jobs:
           cluster-name: ${{ steps.vars.outputs.cluster }}
           cluster-zone: "us-central1-a"
           namespace: dictybase
-          chart-name: ${{ github.event.pull_request.head.repo.name }}
+          chart-name: ${{ github.event.client_payload.pull_request.head.repo.name }}
           chart-path: deployments/charts/automan
           token: ${{ secrets.GITHUB_TOKEN }}
-          image-tag: pr-${{ github.event.pull_request.number }}-${{ steps.vars.outputs.short_sha }}
+          image-tag: pr-${{ github.event.client_payload.pull_request.number }}-${{ steps.vars.outputs.short_sha }}
           ref: ${{ steps.vars.outputs.branch }}
-          artifact: ${{ github.event.pull_request.head.repo.name }}
+          artifact: ${{ github.event.client_payload.pull_request.head.repo.name }}
           environment: development
   deploy:
     runs-on: ubuntu-latest
