@@ -11,6 +11,10 @@ jobs:
         # with:
         #   repository: ${{ github.event.client_payload.pull_request.head.repo.full_name }}
         #   ref: ${{ github.event.client_payload.pull_request.head.ref }}
+      - name: Dump the client payload context
+        env:
+          PAYLOAD_CONTEXT: ${{ toJson(github.event.client_payload) }}
+        run: echo "$PAYLOAD_CONTEXT"
       - name: extract and set vars
         id: vars
         run: |
