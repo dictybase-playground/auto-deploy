@@ -12,3 +12,10 @@ jobs:
           token: ${{ secrets.REPO_ACCESS_TOKEN }}
           reaction-token: ${{ secrets.REPO_ACCESS_TOKEN }}
           commands: deploy
+      - name: Dispatch slash command
+        uses: peter-evans/slash-command-dispatch@v2
+        with:
+          token: ${{ secrets.REPO_ACCESS_TOKEN }}
+          reaction-token: ${{ secrets.REPO_ACCESS_TOKEN }}
+          issue-type: pull-request
+          commands: deploy-pr
