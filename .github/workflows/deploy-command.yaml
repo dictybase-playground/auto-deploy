@@ -15,33 +15,63 @@ jobs:
       - name: extract and set vars
         id: vars
         run: |
-          ref=${{ github.event.client_payload.slash_command.args.named.ref }}
-          if [[ -z "$ref" ]]; then ref="develop"; fi
-          echo ::set-output name=ref::$ref
           cluster=${{ github.event.client_payload.slash_command.args.named.cluster }}
           if [[ -z "$cluster" ]]; then exit 1; fi
-          echo ::set-output name=cluster::$cluster
-          echo ::set-output name=short_sha::$(git rev-parse --short HEAD)
-          if [ ${{ github.event.client_payload.github.actor }} == "wildlifehexagon" ]
+
+          branch=${{ github.event.client_payload.slash_command.args.named.branch }}
+          commit=${{ github.event.client_payload.slash_command.args.named.commit }}
+          pull_request_id=${{ github.event.client_payload.slash_command.args.named.pr }}
+          unnamed_args=${{ github.event.client_payload.slash_command.args.unnamed.all }}
+          short_sha=$(git rev-parse --short HEAD)
+          ref="$commit"
+          image_tag="$commit"
+
+          if [[ ! -z "$pull_request_id" ]]
           then
-            echo ::set-output name=docker_path::"build/package/Dockerfile"
-          elif [ ${{ github.event.client_payload.github.actor }} == "cybersiddhu" ]
-          then
-            echo ::set-output name=docker_path::"build/package/Dockerfile"
-          else
-            exit 1
+            image_tag="pr-$pull_request_id-$short_sha"
+            ref="$commit"
           fi
+
+          if grep -q "pr" <<< "$unnamed_args" && [[ -z "$commit" ]]
+          then
+            pull_request_id="${{ github.event.client_payload.pull_request.number }}"
+            image_tag="pr-$pull_request_id-$short_sha"
+            ref="${{ github.event.client_payload.pull_request.head.sha }}"
+          fi
+
+          if grep -q "pr" <<< "$unnamed_args" && [[ ! -z "$commit" ]]
+          then
+            pull_request_id="${{ github.event.client_payload.pull_request.number }}"
+            image_tag="pr-$pull_request_id-$short_sha"
+            ref="$commit"
+          fi
+
+          if [[ ! -z "$branch" ]]
+          then
+            ref="$branch"
+            image_tag="$(git symbolic-ref -q HEAD | sed -e 's|^refs/heads/||' -e 's~/~-~')-$short_sha"
+          fi
+
+          if [[ ! -z "$commit" ]]
+          then
+            ref="$commit"
+            image_tag="$commit"
+          fi
+
+          echo ::set-output name=ref::$ref
+          echo ::set-output name=image_tag::$image_tag
+          echo ::set-output name=cluster::$cluster
       - name: image build and push
         if: ${{ success() }}
         uses: docker/build-push-action@v1
         with:
           username: ${{ secrets.DOCKER_USER }}
           password: ${{ secrets.DOCKER_PASSWORD  }}
-          repository: dictybase/${{ github.event.client_payload.pull_request.head.repo.name }}
+          repository: dictybase/${{ github.event.client_payload.payload.repository.name }}
           add_git_labels: true
           tag_with_sha: true
           tag_with_ref: true
-          tags: pr-${{ github.event.client_payload.pull_request.number }}-${{ steps.vars.outputs.short_sha }}
+          tags: ${{ steps.vars.outputs.image_tag }}
           dockerfile: build/package/Dockerfile
       - name: prepare for deploy
         if: ${{ success() }}
@@ -51,12 +81,12 @@ jobs:
           cluster-name: ${{ steps.vars.outputs.cluster }}
           cluster-zone: "us-central1-a"
           namespace: dictybase
-          chart-name: ${{ github.event.client_payload.pull_request.head.repo.name }}
+          chart-name: ${{ github.event.client_payload.payload.repository.name }}
           chart-path: deployments/charts/automan
           token: ${{ secrets.GITHUB_TOKEN }}
-          image-tag: pr-${{ github.event.client_payload.pull_request.number }}-${{ steps.vars.outputs.short_sha }}
+          image-tag: ${{ steps.vars.outputs.image_tag }}
           ref: ${{ steps.vars.outputs.ref }}
-          artifact: ${{ github.event.client_payload.pull_request.head.repo.name }}
+          artifact: ${{ github.event.client_payload.payload.repository.name }}
           environment: development
   deploy:
     runs-on: ubuntu-latest
