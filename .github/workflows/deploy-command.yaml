@@ -15,6 +15,7 @@ jobs:
       - name: extract and set vars
         id: vars
         run: |
+          # if cluster isn't passed as arg, exit immediately
           cluster=${{ github.event.client_payload.slash_command.args.named.cluster }}
           if [[ -z "$cluster" ]]; then exit 1; fi
 
@@ -49,6 +50,7 @@ jobs:
 
           if [[ ! -z "$branch" ]]
           then
+            short_sha=$(git rev-parse --verify --short $branch)
             conv_branch_name=$(echo "$branch" | sed 's+/+-+g')
             ref="$branch"
             image_tag="$conv_branch_name-$short_sha"
