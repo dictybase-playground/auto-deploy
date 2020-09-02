@@ -23,7 +23,7 @@ jobs:
           commit=${{ github.event.client_payload.slash_command.args.named.commit }}
           pull_request_id=${{ github.event.client_payload.slash_command.args.named.pr }}
           unnamed_args=${{ github.event.client_payload.slash_command.args.unnamed.all }}
-          short_sha=$(git rev-parse --short $commit)
+          short_sha=$(git rev-parse --short HEAD)
           ref="$commit"
           image_tag="$commit"
 
