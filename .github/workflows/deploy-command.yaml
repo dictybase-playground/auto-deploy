@@ -55,7 +55,7 @@ jobs:
           if [[ ! -z "$commit" ]]
           then
             ref="$commit"
-            image_tag="$commit"
+            image_tag="$short_sha"
           fi
 
           echo ::set-output name=ref::$ref
@@ -72,7 +72,7 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USER }}
           password: ${{ secrets.DOCKER_PASSWORD  }}
-          repository: dictybase/${{ github.event.client_payload.payload.repository.name }}
+          repository: dictybase/${{ github.event.client_payload.github.payload.repository.name }}
           add_git_labels: true
           tag_with_sha: true
           tag_with_ref: true
@@ -86,12 +86,12 @@ jobs:
           cluster-name: ${{ steps.vars.outputs.cluster }}
           cluster-zone: "us-central1-a"
           namespace: dictybase
-          chart-name: ${{ github.event.client_payload.payload.repository.name }}
+          chart-name: ${{ github.event.client_payload.github.payload.repository.name }}
           chart-path: deployments/charts/automan
           token: ${{ secrets.GITHUB_TOKEN }}
           image-tag: ${{ steps.vars.outputs.image_tag }}
           ref: ${{ steps.vars.outputs.ref }}
-          artifact: ${{ github.event.client_payload.payload.repository.name }}
+          artifact: ${{ github.event.client_payload.github.payload.repository.name }}
           environment: development
   deploy:
     runs-on: ubuntu-latest
