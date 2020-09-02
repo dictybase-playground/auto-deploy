@@ -3,7 +3,7 @@ on:
   repository_dispatch:
     types: [deploy-command]
 jobs:
-  example:
+  deploy-slash-command:
     runs-on: ubuntu-latest
     steps:
       - name: Get branch and cluster
@@ -15,12 +15,6 @@ jobs:
           cluster=${{ github.event.client_payload.slash_command.args.named.cluster }}
           if [[ -z "$cluster" ]]; then exit 1; fi
           echo ::set-output name=cluster::$cluster
-      - name: Print vars
-        run: |
-          echo "${{ steps.vars.outputs.branch }}"
-          echo "${{ steps.vars.outputs.cluster }}"
-          echo ${{ steps.vars.outputs.branch }}
-          echo ${{ steps.vars.outputs.cluster }}
       - uses: actions/checkout@v2
         with:
           repository: ${{ github.event.client_payload.pull_request.head.repo.full_name }}
@@ -40,14 +34,17 @@ jobs:
     steps:
       - name: check out code
         uses: actions/checkout@v2
+        # with:
+        #   repository: ${{ github.event.client_payload.pull_request.head.repo.full_name }}
+        #   ref: ${{ github.event.client_payload.pull_request.head.ref }}
       - name: get short sha and docker path
         id: vars
         run: |
           echo ::set-output name=short_sha::$(git rev-parse --short HEAD)
-          if [ ${{ github.event.client_payload.actor }} == "wildlifehexagon" ]
+          if [ ${{ github.event.client_payload.github.actor }} == "wildlifehexagon" ]
           then
             echo ::set-output name=docker_path::"build/package/Dockerfile"
-          elif [ ${{ github.event.client_payload.actor }} == "cybersiddhu" ]
+          elif [ ${{ github.event.client_payload.github.actor }} == "cybersiddhu" ]
           then
             echo ::set-output name=docker_path::"build/package/Dockerfile"
           else
