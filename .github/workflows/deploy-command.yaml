@@ -27,20 +27,23 @@ jobs:
           ref="$commit"
           image_tag="$commit"
 
+          # check if args contains a pull request id
           if [[ ! -z "$pull_request_id" ]]
           then
             image_tag="pr-$pull_request_id-$short_sha"
             ref="$commit"
           fi
 
+          # check if pr is used as an unnamed arg
           if grep -q "pr" <<< "$unnamed_args" && [[ -z "$commit" ]]
           then
-            short_sha=$(git rev-parse --short ${{ github.event.client_payload.pull_request.head.sha }})
+            # short_sha=$(git rev-parse --short ${{ github.event.client_payload.pull_request.head.sha }})
             pull_request_id="${{ github.event.client_payload.pull_request.number }}"
             image_tag="pr-$pull_request_id-$short_sha"
             ref="${{ github.event.client_payload.pull_request.head.sha }}"
           fi
 
+          # check if pr is used as an unnamed arg and it also includes a commit ID
           if grep -q "pr" <<< "$unnamed_args" && [[ ! -z "$commit" ]]
           then
             pull_request_id="${{ github.event.client_payload.pull_request.number }}"
@@ -48,20 +51,23 @@ jobs:
             ref="$commit"
           fi
 
+          # check if branch is used as an arg
           if [[ ! -z "$branch" ]]
           then
-            short_sha=$(git rev-parse --verify --short $branch)
+            # short_sha=$(git rev-parse --verify --short $branch)
             conv_branch_name=$(echo "$branch" | sed 's+/+-+g')
             ref="$branch"
             image_tag="$conv_branch_name-$short_sha"
           fi
 
+          # check if commit is used as an arg
           if [[ ! -z "$commit" ]]
           then
             ref="$commit"
             image_tag="$short_sha"
           fi
 
+          # set vars
           echo ::set-output name=ref::$ref
           echo ::set-output name=image_tag::$image_tag
           echo ::set-output name=cluster::$cluster
