@@ -28,7 +28,7 @@ jobs:
 
           branch=${{ github.event.client_payload.slash_command.args.named.branch }}
           commit=${{ github.event.client_payload.slash_command.args.named.commit }}
-          pull_request_id=${{ github.event.client_payload.slash_command.args.named.pr }}
+          pull_request_id=${{ github.event.client_payload.slash_command.args.named.id }}
           unnamed_args=${{ github.event.client_payload.slash_command.args.unnamed.all }}
           short_sha=$(echo $commit | cut -c1-7)
           ref="$commit"
