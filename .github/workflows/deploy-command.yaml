@@ -54,7 +54,7 @@ jobs:
           # check if branch is used as an arg
           if [[ ! -z "$branch" ]]
           then
-            short_sha=$(git rev-parse --verify --short $branch)
+            short_sha=$(git log $branch -1 --format=%cd )
             conv_branch_name=$(echo "$branch" | sed 's+/+-+g')
             ref="$branch"
             image_tag="$conv_branch_name-$short_sha"
@@ -71,11 +71,13 @@ jobs:
           echo ::set-output name=ref::$ref
           echo ::set-output name=image_tag::$image_tag
           echo ::set-output name=cluster::$cluster
+          echo ::set-output name=short_sha::$short_sha
       - name: print vars
         run: |
           echo ${{ steps.vars.outputs.ref }}
           echo ${{ steps.vars.outputs.cluster }}
           echo ${{ steps.vars.outputs.image_tag }}
+          echo ${{ steps.vars.outputs.short_sha }}
       - name: image build and push
         if: ${{ success() }}
         uses: docker/build-push-action@v1
