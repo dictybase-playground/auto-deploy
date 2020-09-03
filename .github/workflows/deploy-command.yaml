@@ -8,6 +8,8 @@ jobs:
     steps:
       - name: check out code
         uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
       - name: Dump the client payload context
         env:
           PAYLOAD_CONTEXT: ${{ toJson(github.event.client_payload) }}
@@ -23,7 +25,7 @@ jobs:
           commit=${{ github.event.client_payload.slash_command.args.named.commit }}
           pull_request_id=${{ github.event.client_payload.slash_command.args.named.pr }}
           unnamed_args=${{ github.event.client_payload.slash_command.args.unnamed.all }}
-          short_sha=$(git rev-parse --short HEAD)
+          short_sha=$(echo $commit | cut -c1-7)
           ref="$commit"
           image_tag="$commit"
 
