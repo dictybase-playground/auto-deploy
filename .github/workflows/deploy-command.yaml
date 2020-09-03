@@ -60,7 +60,7 @@ jobs:
             short_sha=$(git log origin/$branch -1 --format=%h )
             conv_branch_name=$(echo "$branch" | sed 's+/+-+g')
             ref="$branch"
-            image_tag="$conv_branch_name-$commit"
+            image_tag="$conv_branch_name-$short_sha"
           fi
 
           # check if commit is used as an arg
