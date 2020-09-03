@@ -37,10 +37,10 @@ jobs:
           # check if pr is used as an unnamed arg
           if grep -q "pr" <<< "$unnamed_args" && [[ -z "$commit" ]]
           then
-            short_sha=$(echo ${{ github.event.client_payload.pull_request.head.sha }} | cut -c1-7)
+            short_sha=$(echo ${{ github.event.client_payload.pull_request.base.sha }} | cut -c1-7)
             pull_request_id="${{ github.event.client_payload.pull_request.number }}"
             image_tag="pr-$pull_request_id-$short_sha"
-            ref="${{ github.event.client_payload.pull_request.head.sha }}"
+            ref="${{ github.event.client_payload.pull_request.base.sha }}"
           fi
 
           # check if pr is used as an unnamed arg and it also includes a commit ID
