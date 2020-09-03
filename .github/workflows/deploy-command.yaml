@@ -20,7 +20,11 @@ jobs:
         run: |
           # if cluster isn't passed as arg, exit immediately
           cluster=${{ github.event.client_payload.slash_command.args.named.cluster }}
-          if [[ -z "$cluster" ]]; then exit 1; fi
+          if [[ -z "$cluster" ]]
+          then
+          echo "Cluster name is necessary to deploy!"
+            exit 1
+          fi
 
           branch=${{ github.event.client_payload.slash_command.args.named.branch }}
           commit=${{ github.event.client_payload.slash_command.args.named.commit }}
@@ -58,9 +62,9 @@ jobs:
           if [[ ! -z "$branch" ]]
           then
             short_sha=$(git log origin/$branch -1 --format=%h )
-            conv_branch_name=$(echo "$branch" | sed 's+/+-+g')
+            converted_branch_name=$(echo "$branch" | sed 's+/+-+g')
             ref="$branch"
-            image_tag="$conv_branch_name-$short_sha"
+            image_tag="$converted_branch_name-$short_sha"
           fi
 
           # check if commit is used as an arg
@@ -77,10 +81,10 @@ jobs:
           echo ::set-output name=short_sha::$short_sha
       - name: print vars
         run: |
-          echo ${{ steps.vars.outputs.ref }}
-          echo ${{ steps.vars.outputs.cluster }}
-          echo ${{ steps.vars.outputs.image_tag }}
-          echo ${{ steps.vars.outputs.short_sha }}
+          echo ref: ${{ steps.vars.outputs.ref }}
+          echo cluster: ${{ steps.vars.outputs.cluster }}
+          echo image_tag: ${{ steps.vars.outputs.image_tag }}
+          echo short_sha: ${{ steps.vars.outputs.short_sha }}
   #     - name: image build and push
   #       if: ${{ success() }}
   #       uses: docker/build-push-action@v1
