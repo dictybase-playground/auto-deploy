@@ -57,7 +57,7 @@ jobs:
           # check if branch is used as an arg
           if [[ ! -z "$branch" ]]
           then
-            short_sha=$(git log $branch -1 --format=%h )
+            short_sha=$(git log origin/$branch -1 --format=%h )
             conv_branch_name=$(echo "$branch" | sed 's+/+-+g')
             ref="$branch"
             image_tag="$conv_branch_name-$commit"
