@@ -56,10 +56,10 @@ jobs:
           # check if branch is used as an arg
           if [[ ! -z "$branch" ]]
           then
-            short_sha=$(git log $branch -1 --format=%cd )
+            # short_sha=$(git log $branch -1 --format=%cd )
             conv_branch_name=$(echo "$branch" | sed 's+/+-+g')
             ref="$branch"
-            image_tag="$conv_branch_name-$short_sha"
+            image_tag="$conv_branch_name-$commit"
           fi
 
           # check if commit is used as an arg
