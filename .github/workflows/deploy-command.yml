@@ -42,7 +42,7 @@ jobs:
       - name: download and setup path for github actions binary
         run: |
           mkdir -p github-actions/bin
-          curl -L -o github-actions/bin/actions https://github.com/dictybase-docker/github-actions/releases/download/v0.4.0/action_0.4.0_Linux_x86_64
+          curl -L -o github-actions/bin/actions https://github.com/dictybase-docker/github-actions/releases/download/v0.4.1/action_0.4.1_Linux_x86_64
           chmod +x github-actions/bin/actions
           echo "::add-path::$GITHUB_WORKSPACE/github-actions/bin"
       - name: parse deploy command and set vars
@@ -58,7 +58,7 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USER }}
           password: ${{ secrets.DOCKER_PASSWORD  }}
-          repository: dictybase/${{ github.event.client_payload.github.payload.repository.name }}
+          repository: dictybase/${{ github.event.inputs.repository-name }}
           add_git_labels: true
           tag_with_sha: true
           tag_with_ref: true
@@ -92,7 +92,7 @@ jobs:
       - name: download and setup path for github action binary
         run: |
           mkdir -p github-actions/bin
-          curl -L -o github-actions/bin/actions https://github.com/dictybase-docker/github-actions/releases/download/v0.4.0/action_0.4.0_Linux_x86_64
+          curl -L -o github-actions/bin/actions https://github.com/dictybase-docker/github-actions/releases/download/v0.4.1/action_0.4.1_Linux_x86_64
           chmod +x github-actions/bin/actions
           echo "::add-path::$GITHUB_WORKSPACE/github-actions/bin"
       - name: extract information from deployment payload
