@@ -69,7 +69,7 @@ jobs:
         id: prepare_deploy
         uses: dictybase-docker/prepare-deploy@v1
         with:
-          cluster-name: ${{ steps.vars.outputs.cluster }}
+          cluster-name: ${{ github.event.inputs.cluster }}
           cluster-zone: "us-central1-a"
           namespace: dictybase
           chart-name: ${{ github.event.inputs.repository-name }}
