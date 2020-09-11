@@ -1,90 +1,53 @@
-name: Deploy Slash Command
+name: deploy-command
 on:
-  repository_dispatch:
-    types: [deploy-command]
+  workflow_dispatch:
+    inputs:
+      repository-name:
+        description: "The name of the repository from which the slash command was dispatched"
+        required: true
+      repository-owner:
+        description: "The owner of the repository from which the slash command was dispatched"
+        required: true
+      issue-number:
+        description: "The issue number in which the slash command was made"
+        required: true
+      html-url:
+        description: "URL where comment was created"
+        required: true
+      comment-id:
+        description: "ID of comment with deploy command"
+        required: true
+      cluster:
+        description: "The cluster to deploy to"
+        required: true
+      commit:
+        description: "Commit ID to deploy"
+        required: false
+      branch:
+        description: "Branch to deploy"
+        required: false
 jobs:
-  build:
+  prepare-deploy:
     runs-on: ubuntu-latest
+    name: Testing deploy
     steps:
-      - name: check out code
+      - name: Checkout
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
-      - name: Dump the client payload context
-        env:
-          PAYLOAD_CONTEXT: ${{ toJson(github.event.client_payload) }}
-        run: echo "$PAYLOAD_CONTEXT"
-      - run: git branch -r
-      - name: extract and set vars
-        id: vars
+      - name: download and setup path for github actions binary
         run: |
-          # if cluster isn't passed as arg, exit immediately
-          cluster=${{ github.event.client_payload.slash_command.args.named.cluster }}
-          if [[ -z "$cluster" ]]
-          then
-          echo "Cluster name is necessary to deploy!"
-            exit 1
-          fi
-
-          branch=${{ github.event.client_payload.slash_command.args.named.branch }}
-          commit=${{ github.event.client_payload.slash_command.args.named.commit }}
-          pull_request_id=${{ github.event.client_payload.slash_command.args.named.pr }}
-          unnamed_args=${{ github.event.client_payload.slash_command.args.unnamed.all }}
-          short_sha=$(echo $commit | cut -c1-7)
-          ref="$commit"
-          image_tag="$commit"
-
-          # check if commit is used as an arg
-          if [[ ! -z "$commit" ]]
-          then
-            ref="$commit"
-            image_tag="$short_sha"
-          fi
-
-          # check if args contains a pull request id
-          if [[ ! -z "$pull_request_id" ]]
-          then
-            image_tag="pr-$pull_request_id-$short_sha"
-            ref="$commit"
-          fi
-
-          # check if pr is used as an unnamed arg
-          if grep -q "pr" <<< "$unnamed_args" && [[ -z "$commit" ]]
-          then
-            short_sha=$(echo ${{ github.event.client_payload.pull_request.head.sha }} | cut -c1-7)
-            pull_request_id="${{ github.event.client_payload.pull_request.number }}"
-            image_tag="pr-$pull_request_id-$short_sha"
-            ref="${{ github.event.client_payload.pull_request.head.sha }}"
-          fi
-
-          # check if pr is used as an unnamed arg and it also includes a commit ID
-          if grep -q "pr" <<< "$unnamed_args" && [[ ! -z "$commit" ]]
-          then
-            pull_request_id="${{ github.event.client_payload.pull_request.number }}"
-            image_tag="pr-$pull_request_id-$short_sha"
-            ref="$commit"
-          fi
-
-          # check if branch is used as an arg
-          if [[ ! -z "$branch" ]]
-          then
-            short_sha=$(git log origin/$branch -1 --format=%h )
-            converted_branch_name=$(echo "$branch" | sed 's+/+-+g')
-            ref="$branch"
-            image_tag="$converted_branch_name-$short_sha"
-          fi
-
-          # set vars
-          echo ::set-output name=ref::$ref
-          echo ::set-output name=image_tag::$image_tag
-          echo ::set-output name=cluster::$cluster
-          echo ::set-output name=short_sha::$short_sha
+          mkdir -p github-actions/bin
+          curl -L -o github-actions/bin/actions https://github.com/dictybase-docker/github-actions/releases/download/v0.4.0/action_0.4.0_Linux_x86_64
+          chmod +x github-actions/bin/actions
+          echo "::add-path::$GITHUB_WORKSPACE/github-actions/bin"
+      - name: parse deploy command and set vars
+        id: vars
+        run: actions --log-level debug pcd -f ${GITHUB_EVENT_PATH}
       - name: print vars
         run: |
           echo ref: ${{ steps.vars.outputs.ref }}
-          echo cluster: ${{ steps.vars.outputs.cluster }}
           echo image_tag: ${{ steps.vars.outputs.image_tag }}
-          echo short_sha: ${{ steps.vars.outputs.short_sha }}
       - name: image build and push
         if: ${{ success() }}
         uses: docker/build-push-action@v1
@@ -105,12 +68,12 @@ jobs:
           cluster-name: ${{ steps.vars.outputs.cluster }}
           cluster-zone: "us-central1-a"
           namespace: dictybase
-          chart-name: ${{ github.event.client_payload.github.payload.repository.name }}
+          chart-name: ${{ github.event.inputs.repository-name }}
           chart-path: deployments/charts/automan
           token: ${{ secrets.GITHUB_TOKEN }}
           image-tag: ${{ steps.vars.outputs.image_tag }}
           ref: ${{ steps.vars.outputs.ref }}
-          artifact: ${{ github.event.client_payload.github.payload.repository.name }}
+          artifact: ${{ github.event.inputs.repository-name }}
           environment: development
   deploy:
     runs-on: ubuntu-latest
@@ -121,11 +84,11 @@ jobs:
       - name: download deployment artifact
         uses: actions/download-artifact@v2
         with:
-          name: ${{ github.event.repository.name }}
+          name: ${{ github.event.inputs.repository-name }}
       - name: download and setup path for github action binary
         run: |
           mkdir -p github-actions/bin
-          curl -L -o github-actions/bin/actions https://github.com/dictybase-docker/github-actions/releases/download/v0.0.2/action_0.0.2_Linux_x86_64
+          curl -L -o github-actions/bin/actions https://github.com/dictybase-docker/github-actions/releases/download/v0.4.0/action_0.4.0_Linux_x86_64
           chmod +x github-actions/bin/actions
           echo "::add-path::$GITHUB_WORKSPACE/github-actions/bin"
       - name: extract information from deployment payload
@@ -133,11 +96,11 @@ jobs:
         run: actions --log-level debug sdp -f deployment.json
       - name: set in_progress deployment status
         if: ${{ success() }}
-        run: actions --log-level debug -t ${{ secrets.GITHUB_TOKEN }} --owner ${{ github.repository_owner }} -r ${{ github.event.repository.name }} ds --state in_progress  --deployment_id ${{ steps.deploy_info.outputs.id }} --url ${{ steps.deploy_info.outputs.url }}
+        run: actions --log-level debug -t ${{ secrets.GITHUB_TOKEN }} --owner ${{ github.event.inputs.repository-owner }} -r ${{ github.event.inputs.repository-name }} ds --state in_progress  --deployment_id ${{ steps.deploy_info.outputs.id }} --url ${{ steps.deploy_info.outputs.url }}
       - name: setup google cloud sdk
         uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
         with:
-          version: "299.0.0"
+          version: "307.0.0"
           project_id: ${{ secrets.PROJECT_ID }}
           service_account_key: ${{ secrets.SA_KEY }}
           export_default_credentials: true
@@ -152,10 +115,10 @@ jobs:
         run: actions --log-level debug dc --name ${{ steps.deploy_info.outputs.chart }} --namespace ${{ steps.deploy_info.outputs.namespace }} --image-tag ${{ steps.deploy_info.outputs.image_tag }} --path ${{ steps.deploy_info.outputs.path }}
       - name: set successful deploy status
         if: ${{ success() }}
-        run: actions --log-level debug -t ${{ secrets.GITHUB_TOKEN }} --owner ${{ github.repository_owner }} -r ${{ github.event.repository.name }} ds --state success  --deployment_id ${{ steps.deploy_info.outputs.id }} --url ${{ steps.deploy_info.outputs.url }}
+        run: actions --log-level debug -t ${{ secrets.GITHUB_TOKEN }} --owner ${{ github.event.inputs.repository-owner }} -r ${{ github.event.inputs.repository-name }} ds --state success  --deployment_id ${{ steps.deploy_info.outputs.id }} --url ${{ steps.deploy_info.outputs.url }}
       - name: set unsuccessful deploy status
         if: ${{ failure() }}
-        run: actions --log-level debug -t ${{ secrets.GITHUB_TOKEN }} --owner ${{ github.repository_owner }} -r ${{ github.event.repository.name }} ds --state error  --deployment_id ${{ steps.deploy_info.outputs.id }} --url ${{ steps.deploy_info.outputs.url }}
+        run: actions --log-level debug -t ${{ secrets.GITHUB_TOKEN }} --owner ${{ github.event.inputs.repository-owner }} -r ${{ github.event.inputs.repository-name }} ds --state error  --deployment_id ${{ steps.deploy_info.outputs.id }} --url ${{ steps.deploy_info.outputs.url }}
   add-reaction:
     runs-on: ubuntu-latest
     needs: deploy
@@ -164,9 +127,5 @@ jobs:
         uses: peter-evans/create-or-update-comment@v1
         with:
           token: ${{ secrets.REPO_ACCESS_TOKEN }}
-          comment-id: ${{ github.event.client_payload.github.payload.comment.id }}
+          comment-id: ${{ github.event.inputs.comment-id }}
           reaction-type: hooray
-      - name: Dump the client payload context
-        env:
-          PAYLOAD_CONTEXT: ${{ toJson(github.event.client_payload) }}
-        run: echo "$PAYLOAD_CONTEXT"

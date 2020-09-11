@@ -6,16 +6,24 @@ jobs:
   dispatch:
     runs-on: ubuntu-latest
     steps:
-      - name: Dispatch slash command
+      - name: Dispatch workflow slash command
+        id: deploy
         uses: peter-evans/slash-command-dispatch@v2
         with:
           token: ${{ secrets.REPO_ACCESS_TOKEN }}
           reaction-token: ${{ secrets.REPO_ACCESS_TOKEN }}
           commands: deploy
-    #   - name: Dispatch slash command
-    #     uses: peter-evans/slash-command-dispatch@v2
-    #     with:
-    #       token: ${{ secrets.REPO_ACCESS_TOKEN }}
-    #       reaction-token: ${{ secrets.REPO_ACCESS_TOKEN }}
-    #       issue-type: pull-request
-    #       commands: deploy-pr
+          dispatch-type: workflow
+          static-args: |
+            repository-name=${{ github.event.repository.name }}
+            repository-owner=${{ github.repository_owner }}
+            issue-number=${{ github.event.issue.number }}
+            html-url=${{ github.event.comment.html_url }}
+            comment-id=${{ github.event.comment.id }}
+      - name: Edit comment with error message
+        if: steps.deploy.outputs.error-message
+        uses: peter-evans/create-or-update-comment@v1
+        with:
+          comment-id: ${{ github.event.comment.id }}
+          body: |
+            > ${{ steps.deploy.outputs.error-message }}
